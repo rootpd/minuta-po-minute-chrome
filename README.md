@@ -1,19 +1,20 @@
-<a target="_blank" href="https://chrome.google.com/webstore/detail/cndmbddaappldijonoekcdfdlhemhejm">![Try it now in CWS](https://raw.github.com/GoogleChrome/chrome-app-samples/master/tryitnowbutton.png "Click here to install this sample from the Chrome Web Store")</a>
-
-
 # Rich notifications
 
-This sample shows how to use the "templated" notifications API,
-aka Rich Notifications, which allows an app to show feature-rich notifications
-in the system tray. This API is still in experimental state.
+Chrome extension for displaying notifications from "Minúta po minúte" feature
+provided by https://dennikn.sk. some info might not be presented on these platforms.
 
+## Licensing
+Copyright (C) 2015 bayloft, s.r.o.
 
-> WARNING: currently this API only works on ChromeOS and Windows. Linux should fail gracefully by displaying normal HTML5 notifications, but some info might not be presented on these platforms.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-## Resources
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-* [Notification API documentation](http://developer.chrome.com/apps/notifications.html)
-
-## Screenshot
-
-![screenshot](/samples/rich-notifications/assets/screenshot_1280_800.png)
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

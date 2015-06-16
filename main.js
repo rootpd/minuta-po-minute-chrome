@@ -1,7 +1,7 @@
 var notID = 0;
 var logo = "/images/icon-hires.png";
 var buttons = [
-	"Zobraziť celú správu..."
+	chrome.i18n.getMessage("readMoreButton")
 ];
 
 var articleParserRegex = /(\<article[\s\S]*?\<\/article\>)/ig;
@@ -10,37 +10,48 @@ var targetUrlRegex = /https?:\/\/dennikn.sk\/minuta\/(\d+)/;
 var timeRegex = /(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)/;
 var messageRegex = /\<p\>(.*?)\<\/p\>/gi;
 var htmlRegex = /(<([^>]+)>)/ig;
-var imageRegex = /\<figure\>.*\<img.*?src=\"(.*?)\".*\<\/figure\>/;
+var imageRegex = /<img.*?src=\"(.*?)\"/;
 var articleIdRegex = /article id=\"mpm-(\d+)\"/;
 var youtubeRegex = /youtube\.com\/embed\/(.*?)[\/\?]/;
 
+var notificationSound = new Audio('sounds/knock_brush.mp3');
+
 var defaultOptions = {
 	type : "basic",
-	title: "Minúta po minúte",
+	title: chrome.i18n.getMessage("notificationTitle"),
 	message: null,
 };
-
-var lastProcessedId = getLastProcessedArticleId();
 
 chrome.notifications.onClosed.addListener(notificationClosed);
 chrome.notifications.onClicked.addListener(notificationClicked);
 chrome.notifications.onButtonClicked.addListener(notificationBtnClick);
 
-setInterval(function() {
+checkNews(true);
+setInterval(checkNews.bind(null, false), 60000);
+
+function checkNews(silent) {
 	xhrDownload("text", "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag=0", function() {
 		var matches = this.response.match(articleParserRegex);
 		for (i in matches) {
-			notifyArticle(matches[i].replace(/\s+/g," "));
+			notifyArticle(matches[i].replace(/\s+/g," "), silent);
 		}
 	});
-}, 60000);
+}
 
-function notifyArticle(body) {
+function notifyArticle(body, silent) {
 	var thumbnail = extractFigure(body);
 	var time = extractTimePretty(body);
 	var message = extractMessage(body);
 	var id = extractId(body);
 	var targetUrl = extractTargetUrl(body);
+
+	if (silent === true) {
+		var storage = {};
+		storage[id] = meta;
+		chrome.storage.sync.set(storage);
+
+		return;
+	}
 
 	var options = JSON.parse(JSON.stringify(defaultOptions));
 	var meta = {
@@ -52,23 +63,27 @@ function notifyArticle(body) {
 		return;
 	}
 
-	options.message = message;
+	chrome.storage.sync.get(String(id), function(val) {
+		if (typeof val[id] == 'undefined') {
+			options.message = message;
 
-	if (time !== null) {
-		options.title = "[" + time + "] " + options.title;
-	}
+			if (time !== null) {
+				options.title = "[" + time + "] " + options.title;
+			}
 
-	if (thumbnail !== null) {
-		xhrDownload("blob", thumbnail, function() {
-		    var blob = this.response;
-		    options.type = "image";
-		    options.imageUrl = window.URL.createObjectURL(blob);
+			if (thumbnail !== null) {
+				xhrDownload("blob", thumbnail, function() {
+				    var blob = this.response;
+				    options.type = "image";
+				    options.imageUrl = window.URL.createObjectURL(blob);
 
-		    doNotify(id, options, meta);
-		});
-	} else {
-		doNotify(id, options, meta);
-	}
+				    doNotify(id, options, meta);
+				});
+			} else {
+				doNotify(id, options, meta);
+			}
+		}
+	});
 }
 
 function xhrDownload(responseType, thumbnail, callback) {
@@ -90,13 +105,13 @@ function doNotify(id, options, meta) {
 
 	var storage = {};
 	storage[id] = meta;
-	chrome.storage.local.set(storage);
-
+	chrome.storage.sync.set(storage);
 	chrome.notifications.create(id, options, creationCallback);
 }
 
 function creationCallback(notID) {
-	
+	console.log("The nofitication '" + notID + " 'was created.");
+	notificationSound.play();
 }
 
 function notificationClosed(notID, bByUser) {
@@ -108,9 +123,8 @@ function notificationClicked(notID) {
 }
 
 function notificationBtnClick(notID, iBtn) {
-	chrome.storage.local.get(notID, function(val) {
+	chrome.storage.sync.get(notID, function(val) {
 		var targetUrl = val[notID].targetUrl;
-		// buggy, causing chrome to crash sites
 		chrome.tabs.create({url: targetUrl});
 	});
 }
@@ -145,7 +159,8 @@ function extractTimePretty(body) {
 function extractMessage(body) {
 	var matches = body.match(messageRegex);
 	if (matches !== null && matches.length > 0) {
-		return matches[0].replace(htmlRegex, "");
+		var value = matches[0].replace(htmlRegex, "");
+		return decodeHtml(value);
 	} 
 
 	return null;
@@ -169,6 +184,8 @@ function extractTargetUrl(body) {
 	return null;
 }
 
-function getLastProcessedArticleId() {
-	
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
 }
