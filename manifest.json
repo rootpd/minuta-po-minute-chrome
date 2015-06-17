@@ -3,7 +3,7 @@
   "short_name": "Minuta po minute",
   "description": "Pravidelné notifikácie s najnovšími správami Minúty po minúte Denníka N.",
   "manifest_version" : 2,
-  "version" : "1.0.0",
+  "version" : "1.0.1",
   "default_locale": "sk",
   "icons": { 
     "16": "images/icon16.png",
