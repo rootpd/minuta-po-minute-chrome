@@ -1,4 +1,4 @@
-# Rich notifications
+# Minúta po minúte / Denník N
 
 Chrome extension for displaying notifications from "Minúta po minúte" feature
 provided by https://dennikn.sk. some info might not be presented on these platforms.
