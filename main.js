@@ -30,36 +30,42 @@ chrome.storage.sync.get({
     "interval": 1
   }, function(val) {
   	if (val['sound'] !== 'no-sound') {
-  		notificationSound = new Audio('sounds/' + val['sound'] + '.mp3)');	
+  		notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');	
   	}
-        
+
     checkNews(true);
-    setInterval(checkNews.bind(null, false), 1000 * val['interval']);
+    setInterval(checkNews.bind(null, false), 60000 * val['interval']);
 });
 
 function checkNews(silent) {
 	xhrDownload("text", "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag=0", function() {
 		var matches = this.response.match(articleParserRegex);
+		var storage = {};
+
 		for (i in matches) {
-			notifyArticle(matches[i].replace(/\s+/g," "), silent);
+			
+			if (silent) {
+				var id = extractId(matches[i].replace(/\s+/g," "));
+				storage[id] = {"skipped": true};
+			} else {
+				notifyArticle(matches[i].replace(/\s+/g," "));	
+			}
+		}
+
+		if (silent) {
+			console.log("skipping");
+			console.log(storage);
+			chrome.storage.sync.set(storage);
 		}
 	});
 }
 
-function notifyArticle(body, silent) {
+function notifyArticle(body) {
 	var thumbnail = extractFigure(body);
 	var time = extractTimePretty(body);
 	var message = extractMessage(body);
 	var id = extractId(body);
 	var targetUrl = extractTargetUrl(body);
-
-	if (silent === true) {
-		var storage = {};
-		storage[id] = meta;
-		chrome.storage.sync.set(storage);
-
-		return;
-	}
 
 	var options = JSON.parse(JSON.stringify(defaultOptions));
 	var meta = {
