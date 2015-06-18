@@ -1,4 +1,3 @@
-var notID = 0;
 var logo = "/images/icon-hires.png";
 var buttons = [
 	chrome.i18n.getMessage("readMoreButton")
@@ -14,7 +13,7 @@ var imageRegex = /<img.*?src=\"(.*?)\"/;
 var articleIdRegex = /article id=\"mpm-(\d+)\"/;
 var youtubeRegex = /youtube\.com\/embed\/(.*?)[\/\?]/;
 
-var notificationSound = new Audio('sounds/knock_brush.mp3');
+var notificationSound = null;
 
 var defaultOptions = {
 	type : "basic",
@@ -26,8 +25,17 @@ chrome.notifications.onClosed.addListener(notificationClosed);
 chrome.notifications.onClicked.addListener(notificationClicked);
 chrome.notifications.onButtonClicked.addListener(notificationBtnClick);
 
-checkNews(true);
-setInterval(checkNews.bind(null, false), 60000);
+chrome.storage.sync.get({
+    "sound": "no-sound",
+    "interval": 1
+  }, function(val) {
+  	if (val['sound'] !== 'no-sound') {
+  		notificationSound = new Audio('sounds/' + val['sound'] + '.mp3)');	
+  	}
+        
+    checkNews(true);
+    setInterval(checkNews.bind(null, false), 1000 * val['interval']);
+});
 
 function checkNews(silent) {
 	xhrDownload("text", "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag=0", function() {
@@ -111,7 +119,10 @@ function doNotify(id, options, meta) {
 
 function creationCallback(notID) {
 	console.log("The nofitication '" + notID + " 'was created.");
-	notificationSound.play();
+
+	if (notificationSound !== null) {
+		notificationSound.play();	
+	}
 }
 
 function notificationClosed(notID, bByUser) {

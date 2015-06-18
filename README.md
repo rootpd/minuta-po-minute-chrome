@@ -1,7 +1,7 @@
 # Minúta po minúte / Denník N
 
 Chrome extension for displaying notifications from "Minúta po minúte" feature
-provided by https://dennikn.sk. some info might not be presented on these platforms.
+provided by https://dennikn.sk.
 
 ## Licensing
 Copyright (C) 2015 bayloft, s.r.o.
