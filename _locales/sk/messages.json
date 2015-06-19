@@ -1,8 +1,8 @@
 {
-	"readMoreButton": {
-		"message": "Zobraziť správu..."
-	},
-	"notificationTitle": {
-		"message": "Minúta po minúte"
-	}
+  "readMoreButton": {
+    "message": "Zobraziť správu..."
+  },
+  "notificationTitle": {
+    "message": "Minúta po minúte"
+  }
 }

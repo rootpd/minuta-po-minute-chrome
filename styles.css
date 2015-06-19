@@ -1,7 +1,7 @@
 #settings {
-  padding: 10px;
-  border: 1px solid silver;
-  margin-bottom: 5px;
+    padding: 10px;
+    border: 1px solid silver;
+    margin-bottom: 5px;
 }
 
 html {
@@ -9,52 +9,52 @@ html {
 }
 
 body {
-  font-family: 'Open Sans', sans-serif;
-  font-size: 10pt;
-  width: 610px;
-  overflow: hidden;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 10pt;
+    width: 610px;
+    overflow: hidden;
 }
 
 button {
-  width: 140px;
-  margin-right: 20px;
+    width: 140px;
+    margin-right: 20px;
 }
 
 #save {
-  margin-top: 15px;
-  box-shadow: none !important;
-  border-color: #80091D !important;
-  background: none !important;
+    margin-top: 15px;
+    box-shadow: none !important;
+    border-color: #80091D !important;
+    background: none !important;
 }
 
 .a-minute {
-  font-family: 'Open Sans', sans-serif;
+    font-family: 'Open Sans', sans-serif;
 }
 
 input, select {
-  padding: 5px 20px 5px 5px;
-  border: none !important;
-  border-bottom: solid 2px #c9c9c9 !important;
-  transition: border 0.3s;
-  background-color: #EDECEC;
-  width: 140px;
+    padding: 5px 20px 5px 5px;
+    border: none !important;
+    border-bottom: solid 2px #c9c9c9 !important;
+    transition: border 0.3s;
+    background-color: #EDECEC;
+    width: 140px;
 }
 input:focus, select:focus,
 input.focus, select.focus {
-  border-bottom: solid 2px #80091d !important;
+    border-bottom: solid 2px #80091d !important;
 }
 
 .a-minute {
-	padding: 10px 0;
+    padding: 10px 0;
 }
 
 .i {
-  font: normal normal normal 16px/1 icons;
-  font-size: inherit;
-  text-rendering: auto;
-  display: inline-block;
-  text-transform: none;
-  vertical-align: baseline;
+    font: normal normal normal 16px/1 icons;
+    font-size: inherit;
+    text-rendering: auto;
+    display: inline-block;
+    text-transform: none;
+    vertical-align: baseline;
 }
 .i-check:before {
     content: ''
