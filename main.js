@@ -15,7 +15,14 @@ var youtubeRegex = /youtube\.com\/embed\/(.*?)[\/\?]/;
 
 var notificationSound = null;
 
-var defaultOptions = {
+var defaultSettings = {
+    "sound": "no-sound",
+    "interval": 1,
+    "messageCount": 3
+};
+var currentSettings = {};
+
+var defaultNotificationOptions = {
     type : "basic",
     title: chrome.i18n.getMessage("notificationTitle"),
     message: null
@@ -25,30 +32,43 @@ chrome.notifications.onClosed.addListener(notificationClosed);
 chrome.notifications.onClicked.addListener(notificationClicked);
 chrome.notifications.onButtonClicked.addListener(notificationBtnClick);
 
-chrome.storage.sync.get({
-    "sound": "no-sound",
-    "interval": 1
-}, function(val) {
+chrome.storage.sync.get(defaultSettings, function(val) {
+    currentSettings = val;
+
     if (val['sound'] !== 'no-sound') {
         notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
     }
 
-    checkNews(true);
+    checkNews(false);
     setTimeout(checkNews.bind(null, false), 60000 * val['interval']);
 });
 
 function checkNews(silent) {
+    chrome.storage.sync.get(defaultSettings, function(val) {
+        currentSettings = val;
+        if (val['sound'] !== 'no-sound' && notificationSound.src.indexOf(val['sound']) == -1) {
+            notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
+        }
+    });
+
     xhrDownload("text", "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag=0", function() {
         var matches = this.response.match(articleParserRegex);
         var storage = {};
 
+        var notified = 0;
+
         for (var i in matches) {
+            if (notified == currentSettings['messageCount']) {
+                break;
+            }
 
             if (silent) {
                 var id = extractId(matches[i].replace(/\s+/g," "));
                 storage[id] = {"skipped": true};
             } else {
-                notifyArticle(matches[i].replace(/\s+/g," "));
+                if (notifyArticle(matches[i].replace(/\s+/g," "))) {
+                    notified++;
+                }
             }
         }
 
@@ -60,16 +80,7 @@ function checkNews(silent) {
             return;
         }
 
-        chrome.storage.sync.get({
-            "sound": "no-sound",
-            "interval": 1
-        }, function(val) {
-            if (val['sound'] !== 'no-sound' && notificationSound.src.indexOf(val['sound']) == -1) {
-                notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
-            }
-
-            setTimeout(checkNews.bind(null, false), 60000 * val['interval']);
-        });
+        setTimeout(checkNews.bind(null, false), 60000 * currentSettings['interval']);
     });
 }
 
@@ -80,14 +91,14 @@ function notifyArticle(body) {
     var id = extractId(body);
     var targetUrl = extractTargetUrl(body);
 
-    var options = JSON.parse(JSON.stringify(defaultOptions));
+    var options = JSON.parse(JSON.stringify(defaultNotificationOptions));
     var meta = {
         "targetUrl": targetUrl
     };
 
     if (id === null || message === null) {
         console.warn("Could not parse the message from the source, skipping...");
-        return;
+        return false;
     }
 
     chrome.storage.sync.get(String(id), function(val) {
@@ -111,6 +122,8 @@ function notifyArticle(body) {
             }
         }
     });
+
+    return true;
 }
 
 function xhrDownload(responseType, thumbnail, callback) {
