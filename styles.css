@@ -39,6 +39,9 @@ input, select {
     background-color: #EDECEC;
     width: 140px;
 }
+input[type="checkbox"] {
+    padding: 0;
+}
 input:focus, select:focus,
 input.focus, select.focus {
     border-bottom: solid 2px #80091d !important;

@@ -11,6 +11,7 @@ var messageRegex = /\<p\>(.*?)\<\/p\>/gi;
 var htmlRegex = /(<([^>]+)>)/ig;
 var imageRegex = /<img.*?src=\"(.*?)\"/;
 var articleIdRegex = /article id=\"mpm-(\d+)\"/;
+var importantRegex = /article.*?class=\"([^>]*?)\"/;
 var youtubeRegex = /youtube\.com\/embed\/(.*?)[\/\?]/;
 
 var notificationSound = null;
@@ -18,7 +19,8 @@ var notificationSound = null;
 var defaultSettings = {
     "sound": "no-sound",
     "interval": 1,
-    "messageCount": 3
+    "messageCount": 3,
+    "importantOnly": false
 };
 var currentSettings = {};
 
@@ -90,6 +92,11 @@ function notifyArticle(body) {
     var message = extractMessage(body);
     var id = extractId(body);
     var targetUrl = extractTargetUrl(body);
+    var priority = extractPriority(body);
+
+    if (currentSettings['importantOnly'] && priority !== "important") {
+        return;
+    }
 
     var options = JSON.parse(JSON.stringify(defaultNotificationOptions));
     var meta = {
@@ -222,6 +229,19 @@ function extractTargetUrl(body) {
     var matches = body.match(targetUrlRegex);
     if (matches !== null && matches.length == 2) {
         return matches[0];
+    }
+
+    return null;
+}
+
+function extractPriority(body) {
+    var matches = body.match(importantRegex);
+    if (matches !== null && matches.length == 2) {
+        var classes = matches[1];
+
+        if (classes.indexOf("important") !== -1) {
+            return "important";
+        }
     }
 
     return null;
