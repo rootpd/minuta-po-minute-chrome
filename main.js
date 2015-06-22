@@ -82,7 +82,10 @@ function checkNews(silent) {
             return;
         }
 
-        setTimeout(checkNews.bind(null, false), 60000 * currentSettings['interval']);
+        var minutesInterval = (typeof currentSettings['interval'] !== 'undefined' && currentSettings['interval'] >= 1) ?
+            currentSettings['interval'] : 1;
+
+        setTimeout(checkNews.bind(null, false), 60000 * minutesInterval);
     });
 }
 
