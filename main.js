@@ -42,7 +42,10 @@ chrome.storage.sync.get(defaultSettings, function(val) {
     }
 
     checkNews(false);
-    setTimeout(checkNews.bind(null, false), 60000 * val['interval']);
+
+    var minutesInterval = (typeof currentSettings['interval'] !== 'undefined' && parseInt(currentSettings['interval']) >= 1) ?
+        parseInt(currentSettings['interval']) : 1;
+    setTimeout(checkNews.bind(null, false), 60000 * minutesInterval);
 });
 
 function checkNews(silent) {
@@ -82,9 +85,8 @@ function checkNews(silent) {
             return;
         }
 
-        var minutesInterval = (typeof currentSettings['interval'] !== 'undefined' && currentSettings['interval'] >= 1) ?
-            currentSettings['interval'] : 1;
-
+        var minutesInterval = (typeof currentSettings['interval'] !== 'undefined' && parseInt(currentSettings['interval']) >= 1) ?
+            parseInt(currentSettings['interval']) : 1;
         setTimeout(checkNews.bind(null, false), 60000 * minutesInterval);
     });
 }
