@@ -42,10 +42,6 @@ chrome.storage.sync.get(defaultSettings, function(val) {
     }
 
     checkNews(false);
-
-    var minutesInterval = (typeof currentSettings['interval'] !== 'undefined' && parseInt(currentSettings['interval']) >= 1) ?
-        parseInt(currentSettings['interval']) : 1;
-    setTimeout(checkNews.bind(null, false), 60000 * minutesInterval);
 });
 
 function checkNews(silent) {
@@ -55,6 +51,9 @@ function checkNews(silent) {
             notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
         }
     });
+
+    var minutesInterval = (typeof currentSettings['interval'] !== 'undefined' && parseInt(currentSettings['interval']) >= 1) ?
+        parseInt(currentSettings['interval']) : 1;
 
     xhrDownload("text", "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag=0", function() {
         var matches = this.response.match(articleParserRegex);
@@ -85,8 +84,8 @@ function checkNews(silent) {
             return;
         }
 
-        var minutesInterval = (typeof currentSettings['interval'] !== 'undefined' && parseInt(currentSettings['interval']) >= 1) ?
-            parseInt(currentSettings['interval']) : 1;
+        setTimeout(checkNews.bind(null, false), 60000 * minutesInterval);
+    }, function() {
         setTimeout(checkNews.bind(null, false), 60000 * minutesInterval);
     });
 }
@@ -138,12 +137,13 @@ function notifyArticle(body) {
     return true;
 }
 
-function xhrDownload(responseType, thumbnail, callback) {
+function xhrDownload(responseType, thumbnail, successCallback, errorCallback) {
     var xhr = new XMLHttpRequest();
     xhr.open("GET", thumbnail);
     xhr.responseType = responseType;
 
-    xhr.onload = callback;
+    xhr.onload = successCallback;
+    xhr.onerror = errorCallback;
     xhr.send(null);
 }
 
