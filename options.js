@@ -35,7 +35,7 @@ function getElementValue(elementId) {
 function restoreOptions() {
     chrome.storage.sync.get({
         "sound": "no-sound",
-        "interval": 1,
+        "interval": 5,
         "messageCount": 3,
         "importantOnly": false
     }, function(items) {
