@@ -3,12 +3,14 @@ function saveOptions() {
     var sound = getElementValue("sound");
     var messageCount = getElementValue("message-count");
     var importantOnly = document.getElementById("important-only").checked;
+    var displayTime = getElementValue("display-time");
 
     chrome.storage.sync.set({
         "sound": sound,
         "interval": interval,
         "messageCount": messageCount,
-        "importantOnly": importantOnly
+        "importantOnly": importantOnly,
+        "displayTime": displayTime
     }, function() {
         var submit = document.getElementById('save');
         submit.classList.add('i-check');
@@ -37,12 +39,14 @@ function restoreOptions() {
         "sound": "no-sound",
         "interval": 5,
         "messageCount": 3,
-        "importantOnly": false
+        "importantOnly": false,
+        "displayTime": 10
     }, function(items) {
         document.getElementById('interval').value = items['interval'];
         document.getElementById('sound').value = items['sound'];
         document.getElementById('message-count').value = items['messageCount'];
         document.getElementById('important-only').checked = items['importantOnly'];
+        document.getElementById('display-time').value = items['displayTime'];
     });
 
 }

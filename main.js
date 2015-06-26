@@ -20,14 +20,16 @@ var defaultSettings = {
     "sound": "no-sound",
     "interval": 5,
     "messageCount": 3,
-    "importantOnly": false
+    "importantOnly": false,
+    "displayTime": 10
 };
 var currentSettings = {};
 
 var defaultNotificationOptions = {
     type : "basic",
     title: chrome.i18n.getMessage("notificationTitle"),
-    message: null
+    message: null,
+    priority: 1
 };
 
 chrome.notifications.onClosed.addListener(notificationClosed);
@@ -163,6 +165,10 @@ function doNotify(id, options, meta) {
 
 function creationCallback(notID) {
     console.log("The nofitication '" + notID + " 'was created.");
+
+    setTimeout(function() {
+        chrome.notifications.clear(notID);
+    }, 1000 * currentSettings['displayTime']);
 
     if (notificationSound !== null) {
         notificationSound.play();
