@@ -11,8 +11,7 @@ html {
 body {
     font-family: 'Open Sans', sans-serif;
     font-size: 10pt;
-    width: 610px;
-    overflow: hidden;
+    width: 630px;
 }
 
 button {
@@ -37,7 +36,7 @@ input, select {
     border-bottom: solid 2px #c9c9c9 !important;
     transition: border 0.3s;
     background-color: #EDECEC;
-    width: 140px;
+    width: 260px;
 }
 input[type="checkbox"] {
     padding: 0;

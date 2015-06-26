@@ -21,7 +21,8 @@ var defaultSettings = {
     "interval": 5,
     "messageCount": 3,
     "importantOnly": false,
-    "displayTime": 10
+    "displayTime": 10,
+    "notificationClick": "open"
 };
 var currentSettings = {};
 
@@ -181,9 +182,18 @@ function notificationClosed(notID, bByUser) {
 
 function notificationClicked(notID) {
     console.log("The notification '" + notID + "' was clicked");
+    chrome.notifications.clear(notID);
+
+    if (currentSettings['notificationClick'] == 'open') {
+        openMessage(notID);
+    }
 }
 
 function notificationBtnClick(notID, iBtn) {
+    openMessage(notID);
+}
+
+function openMessage(notID) {
     chrome.storage.sync.get(notID, function(val) {
         var targetUrl = val[notID].targetUrl;
         chrome.tabs.create({url: targetUrl});
