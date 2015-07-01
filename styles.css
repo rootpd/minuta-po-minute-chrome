@@ -71,5 +71,16 @@ input.focus, select.focus {
     width: 630px;
 }
 .s-header .login {
-    width: 436px;
+    width: 543px;
+}
+.s-header .logo {
+    background: #B00C28;
+}
+.s-header .logo a {
+    padding: 0 10px 0 10px;
+}
+.s-header #minuta-logo {
+    position: absolute;
+    top: 0;
+    right: 175px;
 }

@@ -163,7 +163,7 @@
   })();
 
   Notifier = (function() {
-    Notifier.prototype.LOGO = "/images/icon-hires.png";
+    Notifier.prototype.LOGO = "/images/icon512.png";
 
     Notifier.prototype.BUTTONS = [chrome.i18n.getMessage("readMoreButton")];
 

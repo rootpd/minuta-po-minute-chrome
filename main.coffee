@@ -98,7 +98,7 @@ class Minuta
   constructor: (@thumbnail, @time, @message, @id, @targetUrl, @priority) ->
 
 class Notifier
-  LOGO: "/images/icon-hires.png"
+  LOGO: "/images/icon512.png"
   BUTTONS: [
     chrome.i18n.getMessage("readMoreButton")
   ];
