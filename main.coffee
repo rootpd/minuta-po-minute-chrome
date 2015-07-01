@@ -22,8 +22,11 @@ class MinutaAjaxMessageParser
   HTML_REGEX: /(<([^>]+)>)/ig
   IMAGE_REGEX: /<img.*?src="(.*?)"/
   ARTICLE_ID_REGEX: /article id="mpm-(\d+)"/
-  IMPORTANT_REGEX: /article.*?class="([^>]*?)"/
+  PRIORITY_REGEX: /article.*?class="([^>]*?)"/
   YOUTUBE_REGEX: /youtube\.com\/embed\/(.*?)[\/\?]/
+
+  PRIORITY_STICKY: "sticky"
+  PRIORITY_IMPORTANT: "important"
 
   messageBody: null
 
@@ -75,12 +78,12 @@ class MinutaAjaxMessageParser
       return matches[0]
 
   getPriority: =>
-    matches = @messageBody.match(@IMPORTANT_REGEX);
+    matches = @messageBody.match(@PRIORITY_REGEX);
     if (matches? && matches.length == 2)
       classes = matches[1];
 
-      if (classes.indexOf("important") != -1)
-        return "important"
+      return @PRIORITY_IMPORTANT if classes.indexOf("important") != -1
+      return @PRIORITY_STICKY if classes.indexOf("sticky") != -1
 
   decodeHtml: (html) ->
     txt = document.createElement "textarea"
@@ -123,11 +126,8 @@ class Notifier
   parser: null
 
   constructor: (@downloader, @parser) ->
-    #noinspection JSUnresolvedVariable
     chrome.notifications.onClosed.addListener @notificationClosed;
-    #noinspection JSUnresolvedVariable
     chrome.notifications.onClicked.addListener @notificationClicked;
-    #noinspection JSUnresolvedVariable
     chrome.notifications.onButtonClicked.addListener @notificationBtnClick;
     @reloadSettings()
 
@@ -144,40 +144,48 @@ class Notifier
       then parseInt(@currentSettings['interval']) else 1
 
     downloader.xhrDownload "text", downloader.URI, (event) =>
-      messages = downloader.getMessages event.target.response;
+      rawMessages = downloader.getMessages event.target.response;
       storage = {}
-      notified = 0
+      messages = {}
 
-      for message in messages
-        break if (notified == @currentSettings['messageCount'])
+      for rawMessage in rawMessages
+        break if Object.keys(messages).length == parseInt(@currentSettings['messageCount'])
 
-        minuta = parser.parse message
+        message = parser.parse rawMessage
+        continue if message.priority is parser.PRIORITY_STICKY
+
+        messages[message.id] = message
+
+      chrome.storage.sync.get Object.keys(messages), (alreadyNotifiedMessages) =>
+        delay = 0
+        for id, message of messages
+          continue if message.id of alreadyNotifiedMessages
+
+          if (silently) or (@currentSettings['importantOnly'] and message.priority != parser.PRIORITY_IMPORTANT)
+            storage[message.id] = { "skipped": true, "targetUrl": message.targetUrl }
+          else
+            do (message) =>
+              setTimeout =>
+                @notifyArticle message
+              , delay
+            delay += 100 # because we're trying to be sure it gets executed in proper order
 
         if silently
-          storage[minuta.id] = { "skipped": true }
-        else
-          notified++ if @notifyArticle minuta, downloader
+          console.log "silent iteration, skipping following messages..."
+          console.log storage
+          chrome.storage.sync.set storage
 
-      if (silently)
-        console.log "silent iteration, skipping following messages..."
-        console.log storage
-        chrome.storage.sync.set storage
-
-      setTimeout @run.bind(this, false), 60000 * minutesInterval
-    , =>
-      setTimeout @run.bind(this, false), 60000 * minutesInterval
+        setTimeout @run.bind(this, false), 60000 * minutesInterval
 
   reloadSettings: =>
-    #noinspection JSUnresolvedVariable
     chrome.storage.sync.get @DEFAULT_SETTINGS, (val) =>
       @currentSettings = val;
 
       if val['sound'] != 'no-sound'
         @notificationSound = new Audio('sounds/' + val['sound'] + '.mp3')
 
-  notifyArticle: (minuta, downloader) ->
-    return if (@currentSettings['importantOnly'] && minuta.priority != "important")
 
+  notifyArticle: (minuta) ->
     options = JSON.parse(JSON.stringify(@DEFAULT_NOTIFICATION_OPTIONS));
     meta =
       "targetUrl": minuta.targetUrl
@@ -186,24 +194,19 @@ class Notifier
       console.warn("Could not parse the message from the source, skipping...");
       return false;
 
-    chrome.storage.sync.get minuta.id, (val) =>
-      unless (val[minuta.id]?)
-        options.message = minuta.text;
+    options.message = minuta.text;
 
-        if minuta.time?
-          options.title = "[" + minuta.time + "] " + options.title
+    if minuta.time?
+      options.title = "[" + minuta.time + "] " + options.title
 
-        if minuta.thumbnail?
-          downloader.xhrDownload "blob", minuta.thumbnail, (event) =>
-            blob = event.target.response
-            options.type = "image"
-            options.imageUrl = window.URL.createObjectURL(blob)
+    if minuta.thumbnail?
+      options.type = "image"
+      options.imageUrl = minuta.thumbnail
 
-            @doNotify minuta.id, options, meta
-        else
-          @doNotify minuta.id, options, meta
+    @doNotify minuta.id, options, meta
 
-      return true
+    return true
+
 
   doNotify: (id, options, meta) ->
     options.iconUrl = chrome.runtime.getURL(@LOGO);
@@ -256,5 +259,5 @@ class Notifier
 # MAIN
 ########################
 
-notifier = new Notifier MinutaAjaxDownloader, MinutaAjaxMessageParser
+notifier = new Notifier(MinutaAjaxDownloader, MinutaAjaxMessageParser)
 notifier.run true

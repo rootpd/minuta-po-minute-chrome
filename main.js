@@ -51,9 +51,13 @@
 
     MinutaAjaxMessageParser.prototype.ARTICLE_ID_REGEX = /article id="mpm-(\d+)"/;
 
-    MinutaAjaxMessageParser.prototype.IMPORTANT_REGEX = /article.*?class="([^>]*?)"/;
+    MinutaAjaxMessageParser.prototype.PRIORITY_REGEX = /article.*?class="([^>]*?)"/;
 
     MinutaAjaxMessageParser.prototype.YOUTUBE_REGEX = /youtube\.com\/embed\/(.*?)[\/\?]/;
+
+    MinutaAjaxMessageParser.prototype.PRIORITY_STICKY = "sticky";
+
+    MinutaAjaxMessageParser.prototype.PRIORITY_IMPORTANT = "important";
 
     MinutaAjaxMessageParser.prototype.messageBody = null;
 
@@ -116,11 +120,14 @@
 
     MinutaAjaxMessageParser.prototype.getPriority = function() {
       var classes, matches;
-      matches = this.messageBody.match(this.IMPORTANT_REGEX);
+      matches = this.messageBody.match(this.PRIORITY_REGEX);
       if ((matches != null) && matches.length === 2) {
         classes = matches[1];
         if (classes.indexOf("important") !== -1) {
-          return "important";
+          return this.PRIORITY_IMPORTANT;
+        }
+        if (classes.indexOf("sticky") !== -1) {
+          return this.PRIORITY_STICKY;
         }
       }
     };
@@ -220,36 +227,50 @@
       minutesInterval = (this.currentSettings['interval'] != null) && parseInt(this.currentSettings['interval']) >= 1 ? parseInt(this.currentSettings['interval']) : 1;
       return downloader.xhrDownload("text", downloader.URI, (function(_this) {
         return function(event) {
-          var i, len, message, messages, minuta, notified, storage;
-          messages = downloader.getMessages(event.target.response);
+          var i, len, message, messages, rawMessage, rawMessages, storage;
+          rawMessages = downloader.getMessages(event.target.response);
           storage = {};
-          notified = 0;
-          for (i = 0, len = messages.length; i < len; i++) {
-            message = messages[i];
-            if (notified === _this.currentSettings['messageCount']) {
+          messages = {};
+          for (i = 0, len = rawMessages.length; i < len; i++) {
+            rawMessage = rawMessages[i];
+            if (Object.keys(messages).length === parseInt(_this.currentSettings['messageCount'])) {
               break;
             }
-            minuta = parser.parse(message);
-            if (silently) {
-              storage[minuta.id] = {
-                "skipped": true
-              };
-            } else {
-              if (_this.notifyArticle(minuta, downloader)) {
-                notified++;
+            message = parser.parse(rawMessage);
+            if (message.priority === parser.PRIORITY_STICKY) {
+              continue;
+            }
+            messages[message.id] = message;
+          }
+          return chrome.storage.sync.get(Object.keys(messages), function(alreadyNotifiedMessages) {
+            var delay, id;
+            delay = 0;
+            for (id in messages) {
+              message = messages[id];
+              if (message.id in alreadyNotifiedMessages) {
+                continue;
+              }
+              if (silently || (_this.currentSettings['importantOnly'] && message.priority !== parser.PRIORITY_IMPORTANT)) {
+                storage[message.id] = {
+                  "skipped": true,
+                  "targetUrl": message.targetUrl
+                };
+              } else {
+                (function(message) {
+                  return setTimeout(function() {
+                    return _this.notifyArticle(message);
+                  }, delay);
+                })(message);
+                delay += 100;
               }
             }
-          }
-          if (silently) {
-            console.log("silent iteration, skipping following messages...");
-            console.log(storage);
-            chrome.storage.sync.set(storage);
-          }
-          return setTimeout(_this.run.bind(_this, false), 60000 * minutesInterval);
-        };
-      })(this), (function(_this) {
-        return function() {
-          return setTimeout(_this.run.bind(_this, false), 60000 * minutesInterval);
+            if (silently) {
+              console.log("silent iteration, skipping following messages...");
+              console.log(storage);
+              chrome.storage.sync.set(storage);
+            }
+            return setTimeout(_this.run.bind(_this, false), 60000 * minutesInterval);
+          });
         };
       })(this));
     };
@@ -265,11 +286,8 @@
       })(this));
     };
 
-    Notifier.prototype.notifyArticle = function(minuta, downloader) {
+    Notifier.prototype.notifyArticle = function(minuta) {
       var meta, options;
-      if (this.currentSettings['importantOnly'] && minuta.priority !== "important") {
-        return;
-      }
       options = JSON.parse(JSON.stringify(this.DEFAULT_NOTIFICATION_OPTIONS));
       meta = {
         "targetUrl": minuta.targetUrl
@@ -278,28 +296,16 @@
         console.warn("Could not parse the message from the source, skipping...");
         return false;
       }
-      return chrome.storage.sync.get(minuta.id, (function(_this) {
-        return function(val) {
-          if (!(val[minuta.id] != null)) {
-            options.message = minuta.text;
-            if (minuta.time != null) {
-              options.title = "[" + minuta.time + "] " + options.title;
-            }
-            if (minuta.thumbnail != null) {
-              downloader.xhrDownload("blob", minuta.thumbnail, function(event) {
-                var blob;
-                blob = event.target.response;
-                options.type = "image";
-                options.imageUrl = window.URL.createObjectURL(blob);
-                return _this.doNotify(minuta.id, options, meta);
-              });
-            } else {
-              _this.doNotify(minuta.id, options, meta);
-            }
-          }
-          return true;
-        };
-      })(this));
+      options.message = minuta.text;
+      if (minuta.time != null) {
+        options.title = "[" + minuta.time + "] " + options.title;
+      }
+      if (minuta.thumbnail != null) {
+        options.type = "image";
+        options.imageUrl = minuta.thumbnail;
+      }
+      this.doNotify(minuta.id, options, meta);
+      return true;
     };
 
     Notifier.prototype.doNotify = function(id, options, meta) {
