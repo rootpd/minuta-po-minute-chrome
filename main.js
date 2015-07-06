@@ -279,7 +279,7 @@
       return chrome.storage.sync.get(this.DEFAULT_SETTINGS, (function(_this) {
         return function(val) {
           _this.currentSettings = val;
-          if (val['sound'] !== 'no-sound') {
+          if (val['sound'] !== 'no-sound' && ((_this.notificationSound == null) || _this.notificationSound.src.indexOf(val['sound']) === -1)) {
             return _this.notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
           }
         };

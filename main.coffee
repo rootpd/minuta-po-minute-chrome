@@ -181,7 +181,7 @@ class Notifier
     chrome.storage.sync.get @DEFAULT_SETTINGS, (val) =>
       @currentSettings = val;
 
-      if val['sound'] != 'no-sound'
+      if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSound.src.indexOf(val['sound']) == -1)
         @notificationSound = new Audio('sounds/' + val['sound'] + '.mp3')
 
 
