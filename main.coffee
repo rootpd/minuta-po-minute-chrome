@@ -156,7 +156,7 @@ class Notifier
 
         messages[message.id] = message
 
-      chrome.storage.sync.get Object.keys(messages), (alreadyNotifiedMessages) =>
+      chrome.storage.local.get Object.keys(messages), (alreadyNotifiedMessages) =>
         delay = 0
         for id, message of messages
           continue if message.id of alreadyNotifiedMessages
@@ -173,13 +173,15 @@ class Notifier
         if silently
           console.log "silent iteration, skipping following messages..."
           console.log storage
-          chrome.storage.sync.set storage
+          chrome.storage.local.set storage
 
         setTimeout @run.bind(this, false), 60000 * minutesInterval
 
   reloadSettings: =>
     chrome.storage.sync.get @DEFAULT_SETTINGS, (val) =>
       @currentSettings = val;
+      chrome.storage.sync.clear()
+      chrome.storage.sync.set val
 
       if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSound.src.indexOf(val['sound']) == -1)
         @notificationSound = new Audio('sounds/' + val['sound'] + '.mp3')
@@ -217,7 +219,7 @@ class Notifier
 
     storage = {};
     storage[id] = meta;
-    chrome.storage.sync.set storage;
+    chrome.storage.local.set storage;
     chrome.notifications.create id, options, @creationCallback
 
 
@@ -250,7 +252,7 @@ class Notifier
   openMessage: (notID) =>
     #noinspection JSUnresolvedVariable
     #noinspection JSUnresolvedVariable
-    chrome.storage.sync.get notID, (val) ->
+    chrome.storage.local.get notID, (val) ->
       targetUrl = val[notID].targetUrl;
       chrome.tabs.create {url: targetUrl}
 

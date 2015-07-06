@@ -242,7 +242,7 @@
             }
             messages[message.id] = message;
           }
-          return chrome.storage.sync.get(Object.keys(messages), function(alreadyNotifiedMessages) {
+          return chrome.storage.local.get(Object.keys(messages), function(alreadyNotifiedMessages) {
             var delay, id;
             delay = 0;
             for (id in messages) {
@@ -267,7 +267,7 @@
             if (silently) {
               console.log("silent iteration, skipping following messages...");
               console.log(storage);
-              chrome.storage.sync.set(storage);
+              chrome.storage.local.set(storage);
             }
             return setTimeout(_this.run.bind(_this, false), 60000 * minutesInterval);
           });
@@ -279,6 +279,8 @@
       return chrome.storage.sync.get(this.DEFAULT_SETTINGS, (function(_this) {
         return function(val) {
           _this.currentSettings = val;
+          chrome.storage.sync.clear();
+          chrome.storage.sync.set(val);
           if (val['sound'] !== 'no-sound' && ((_this.notificationSound == null) || _this.notificationSound.src.indexOf(val['sound']) === -1)) {
             return _this.notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
           }
@@ -321,7 +323,7 @@
       }
       storage = {};
       storage[id] = meta;
-      chrome.storage.sync.set(storage);
+      chrome.storage.local.set(storage);
       return chrome.notifications.create(id, options, this.creationCallback);
     };
 
@@ -354,7 +356,7 @@
     };
 
     Notifier.prototype.openMessage = function(notID) {
-      return chrome.storage.sync.get(notID, function(val) {
+      return chrome.storage.local.get(notID, function(val) {
         var targetUrl;
         targetUrl = val[notID].targetUrl;
         return chrome.tabs.create({
