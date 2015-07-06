@@ -242,7 +242,7 @@
             }
             messages[message.id] = message;
           }
-          return chrome.storage.sync.get(Object.keys(messages), function(alreadyNotifiedMessages) {
+          return chrome.storage.local.get(Object.keys(messages), function(alreadyNotifiedMessages) {
             var delay, id;
             delay = 0;
             for (id in messages) {
@@ -267,7 +267,7 @@
             if (silently) {
               console.log("silent iteration, skipping following messages...");
               console.log(storage);
-              chrome.storage.sync.set(storage);
+              chrome.storage.local.set(storage);
             }
             return setTimeout(_this.run.bind(_this, false), 60000 * minutesInterval);
           });
@@ -321,7 +321,7 @@
       }
       storage = {};
       storage[id] = meta;
-      chrome.storage.sync.set(storage);
+      chrome.storage.local.set(storage);
       return chrome.notifications.create(id, options, this.creationCallback);
     };
 
@@ -354,7 +354,7 @@
     };
 
     Notifier.prototype.openMessage = function(notID) {
-      return chrome.storage.sync.get(notID, function(val) {
+      return chrome.storage.local.get(notID, function(val) {
         var targetUrl;
         targetUrl = val[notID].targetUrl;
         return chrome.tabs.create({

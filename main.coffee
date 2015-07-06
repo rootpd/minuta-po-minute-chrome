@@ -156,7 +156,7 @@ class Notifier
 
         messages[message.id] = message
 
-      chrome.storage.sync.get Object.keys(messages), (alreadyNotifiedMessages) =>
+      chrome.storage.local.get Object.keys(messages), (alreadyNotifiedMessages) =>
         delay = 0
         for id, message of messages
           continue if message.id of alreadyNotifiedMessages
@@ -173,7 +173,7 @@ class Notifier
         if silently
           console.log "silent iteration, skipping following messages..."
           console.log storage
-          chrome.storage.sync.set storage
+          chrome.storage.local.set storage
 
         setTimeout @run.bind(this, false), 60000 * minutesInterval
 
@@ -217,7 +217,7 @@ class Notifier
 
     storage = {};
     storage[id] = meta;
-    chrome.storage.sync.set storage;
+    chrome.storage.local.set storage;
     chrome.notifications.create id, options, @creationCallback
 
 
@@ -250,7 +250,7 @@ class Notifier
   openMessage: (notID) =>
     #noinspection JSUnresolvedVariable
     #noinspection JSUnresolvedVariable
-    chrome.storage.sync.get notID, (val) ->
+    chrome.storage.local.get notID, (val) ->
       targetUrl = val[notID].targetUrl;
       chrome.tabs.create {url: targetUrl}
 
