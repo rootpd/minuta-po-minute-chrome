@@ -8,10 +8,16 @@ html {
     height: auto;
 }
 
-body {
+body.options {
     font-family: 'Open Sans', sans-serif;
     font-size: 10pt;
     width: 630px;
+}
+body.popup {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 10pt;
+    padding: 10px;
+    width: 210px;
 }
 
 button {
@@ -26,7 +32,7 @@ button {
     background: none !important;
 }
 
-.a-minute {
+.a-minute, .a-minute select {
     font-family: 'Open Sans', sans-serif;
 }
 .a-minute.checkbox label {
@@ -92,4 +98,18 @@ input.focus, select.focus {
     position: absolute;
     top: 0;
     right: 175px;
+}
+
+body.popup select {
+    width: 110px;
+    display: inline-block;
+}
+body.popup .e-button {
+    color: #b00c28;
+    width: auto;
+    height: auto;
+    padding: 6px;
+    line-height: initial;
+    margin: 0 0 0 5px;
+    display: inline-block;
 }
