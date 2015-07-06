@@ -20,7 +20,7 @@ button {
 }
 
 #save {
-    margin-top: 15px;
+    margin-top: 8px;
     box-shadow: none !important;
     border-color: #80091D !important;
     background: none !important;
@@ -28,6 +28,15 @@ button {
 
 .a-minute {
     font-family: 'Open Sans', sans-serif;
+}
+.a-minute.checkbox label {
+    display: inline-block;
+    margin-left: 5px;
+    vertical-align: middle;
+    padding: 0;
+}
+.a-minute.checkbox input {
+    display: inline-block;
 }
 
 input, select {
