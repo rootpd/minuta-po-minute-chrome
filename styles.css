@@ -67,6 +67,9 @@ input.focus, select.focus {
 .a-minute {
     padding: 10px 0;
 }
+.a-minute.compact {
+    padding: 3px 0;
+}
 
 .i {
     font: normal normal normal 16px/1 icons;
@@ -112,4 +115,7 @@ body.popup .e-button {
     line-height: initial;
     margin: 0 0 0 5px;
     display: inline-block;
+}
+body.popup .e-button.compact {
+    padding: 0 4px;
 }

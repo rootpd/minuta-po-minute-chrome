@@ -180,7 +180,8 @@
       "messageCount": 3,
       "importantOnly": false,
       "displayTime": 10,
-      "notificationClick": "open"
+      "notificationClick": "open",
+      "snooze": "off"
     };
 
     Notifier.prototype.DEFAULT_NOTIFICATION_OPTIONS = {
@@ -243,7 +244,7 @@
             messages[message.id] = message;
           }
           return chrome.storage.local.get(Object.keys(messages), function(alreadyNotifiedMessages) {
-            var delay, id;
+            var delay, id, isSnoozed;
             delay = 0;
             for (id in messages) {
               message = messages[id];
@@ -269,7 +270,8 @@
               console.log(storage);
               chrome.storage.local.set(storage);
             }
-            return setTimeout(_this.run.bind(_this, false), 60000 * minutesInterval);
+            isSnoozed = _this.currentSettings['snooze'] !== 'off' && (new Date(_this.currentSettings['snooze'])).getTime() > (new Date()).getTime();
+            return setTimeout(_this.run.bind(_this, isSnoozed), 60000 * minutesInterval);
           });
         };
       })(this));

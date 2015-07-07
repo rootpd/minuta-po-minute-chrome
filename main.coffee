@@ -112,7 +112,8 @@ class Notifier
     "messageCount": 3,
     "importantOnly": false,
     "displayTime": 10,
-    "notificationClick": "open"
+    "notificationClick": "open",
+    "snooze": "off",
 
   DEFAULT_NOTIFICATION_OPTIONS:
     type : "basic",
@@ -175,7 +176,8 @@ class Notifier
           console.log storage
           chrome.storage.local.set storage
 
-        setTimeout @run.bind(this, false), 60000 * minutesInterval
+        isSnoozed = @currentSettings['snooze'] != 'off' and (new Date(@currentSettings['snooze'])).getTime() > (new Date()).getTime()
+        setTimeout @run.bind(this, isSnoozed), 60000 * minutesInterval
 
   reloadSettings: =>
     chrome.storage.sync.get @DEFAULT_SETTINGS, (val) =>

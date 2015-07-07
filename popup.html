@@ -7,22 +7,28 @@
     <link href="https://dennikn.sk/wp-content/themes/dnwp/main.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
     <title>Minúta po minúte</title>
+    <script type="text/javascript" src="popup.js"></script>
 </head>
 
 <body class="popup">
 
-<div class="a-minute">
-    <label for="pause">Pozastaviť notifikácie</label>
-    <select id="pause" name="pause">
-        <option value="on">30 minút</option>
-        <option value="30">30 minút</option>
+<div class="a-minute compact" id="snooze-timer">
+    <img src="images/snooze48.png" style="height: 24px;float: left;" />
+    <span id="snooze-timer-value" style="line-height: 36px; margin-left: 5px;"></span>
+    <span class="e-button red i compact" id="unbind-snooze">x</span>
+</div>
+
+<div class="a-minute compact" id="snooze-setting">
+    <label for="snooze">Pozastaviť notifikácie</label>
+    <select id="snooze" name="snooze">
+        <option value="30" selected>30 minút</option>
         <option value="60">1 hodina</option>
         <option value="120">2 hodiny</option>
         <option value="180">3 hodiny</option>
         <option value="300">5 hodín</option>
         <option value="480">8 hodín</option>
     </select>
-    <button id="set-pause" class="e-button red i">Nastaviť</button>
+    <button id="set-snooze" class="e-button red i">Uložiť</button>
 </div>
 
 </body>
