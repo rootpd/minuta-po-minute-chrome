@@ -130,16 +130,18 @@ class Notifier
     chrome.notifications.onClosed.addListener @notificationClosed;
     chrome.notifications.onClicked.addListener @notificationClicked;
     chrome.notifications.onButtonClicked.addListener @notificationBtnClick;
-    @reloadSettings()
 
-  run: (silently) ->
+  run: (forceSilent) ->
     downloader = new @downloader();
     parser = new @parser();
 
-    @reloadSettings()
-    @downloadMessages downloader, parser, silently
+    @reloadSettings =>
+      @downloadMessages downloader, parser, forceSilent
 
   downloadMessages: (downloader, parser, silently) =>
+    if not silently
+      silently = @currentSettings['snooze'] != 'off' and (new Date(@currentSettings['snooze'])).getTime() > (new Date()).getTime()
+
     minutesInterval =
       if @currentSettings['interval']? and parseInt(@currentSettings['interval']) >= 1
       then parseInt(@currentSettings['interval']) else 1
@@ -176,10 +178,9 @@ class Notifier
           console.log storage
           chrome.storage.local.set storage
 
-        isSnoozed = @currentSettings['snooze'] != 'off' and (new Date(@currentSettings['snooze'])).getTime() > (new Date()).getTime()
-        setTimeout @run.bind(this, isSnoozed), 60000 * minutesInterval
+        setTimeout @run.bind(this, false), 60000 * minutesInterval
 
-  reloadSettings: =>
+  reloadSettings: (callback) =>
     chrome.storage.sync.get @DEFAULT_SETTINGS, (val) =>
       @currentSettings = val;
       chrome.storage.sync.clear()
@@ -187,6 +188,8 @@ class Notifier
 
       if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSound.src.indexOf(val['sound']) == -1)
         @notificationSound = new Audio('sounds/' + val['sound'] + '.mp3')
+
+      callback() if callback?
 
 
   notifyArticle: (minuta) ->

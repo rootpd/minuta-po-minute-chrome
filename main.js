@@ -212,19 +212,24 @@
       chrome.notifications.onClosed.addListener(this.notificationClosed);
       chrome.notifications.onClicked.addListener(this.notificationClicked);
       chrome.notifications.onButtonClicked.addListener(this.notificationBtnClick);
-      this.reloadSettings();
     }
 
-    Notifier.prototype.run = function(silently) {
+    Notifier.prototype.run = function(forceSilent) {
       var downloader, parser;
       downloader = new this.downloader();
       parser = new this.parser();
-      this.reloadSettings();
-      return this.downloadMessages(downloader, parser, silently);
+      return this.reloadSettings((function(_this) {
+        return function() {
+          return _this.downloadMessages(downloader, parser, forceSilent);
+        };
+      })(this));
     };
 
     Notifier.prototype.downloadMessages = function(downloader, parser, silently) {
       var minutesInterval;
+      if (!silently) {
+        silently = this.currentSettings['snooze'] !== 'off' && (new Date(this.currentSettings['snooze'])).getTime() > (new Date()).getTime();
+      }
       minutesInterval = (this.currentSettings['interval'] != null) && parseInt(this.currentSettings['interval']) >= 1 ? parseInt(this.currentSettings['interval']) : 1;
       return downloader.xhrDownload("text", downloader.URI, (function(_this) {
         return function(event) {
@@ -244,7 +249,7 @@
             messages[message.id] = message;
           }
           return chrome.storage.local.get(Object.keys(messages), function(alreadyNotifiedMessages) {
-            var delay, id, isSnoozed;
+            var delay, id;
             delay = 0;
             for (id in messages) {
               message = messages[id];
@@ -270,21 +275,23 @@
               console.log(storage);
               chrome.storage.local.set(storage);
             }
-            isSnoozed = _this.currentSettings['snooze'] !== 'off' && (new Date(_this.currentSettings['snooze'])).getTime() > (new Date()).getTime();
-            return setTimeout(_this.run.bind(_this, isSnoozed), 60000 * minutesInterval);
+            return setTimeout(_this.run.bind(_this, false), 60000 * minutesInterval);
           });
         };
       })(this));
     };
 
-    Notifier.prototype.reloadSettings = function() {
+    Notifier.prototype.reloadSettings = function(callback) {
       return chrome.storage.sync.get(this.DEFAULT_SETTINGS, (function(_this) {
         return function(val) {
           _this.currentSettings = val;
           chrome.storage.sync.clear();
           chrome.storage.sync.set(val);
           if (val['sound'] !== 'no-sound' && ((_this.notificationSound == null) || _this.notificationSound.src.indexOf(val['sound']) === -1)) {
-            return _this.notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
+            _this.notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
+          }
+          if (callback != null) {
+            return callback();
           }
         };
       })(this));
