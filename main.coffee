@@ -24,6 +24,7 @@ class MinutaAjaxMessageParser
   ARTICLE_ID_REGEX: /article id="mpm-(\d+)"/
   PRIORITY_REGEX: /article.*?class="([^>]*?)"/
   YOUTUBE_REGEX: /youtube\.com\/embed\/(.*?)[\/\?]/
+  TOPIC_REGEX: /"#tema=(.*?)"/g
 
   PRIORITY_STICKY: "sticky"
   PRIORITY_IMPORTANT: "important"
@@ -34,12 +35,13 @@ class MinutaAjaxMessageParser
     @messageBody = messageBody.replace /\s+/g," "
 
     return {
-    thumbnail: @getFigure()
-    time: @getTimePretty()
-    text: @getText()
-    id: @getId()
-    targetUrl: @getTargetUrl()
-    priority: @getPriority()
+      thumbnail: @getFigure()
+      time: @getTimePretty()
+      text: @getText()
+      id: @getId()
+      targetUrl: @getTargetUrl()
+      priority: @getPriority()
+      topics: @getTopics()
     }
 
   getFigure: =>
@@ -85,6 +87,16 @@ class MinutaAjaxMessageParser
       return @PRIORITY_IMPORTANT if classes.indexOf("important") != -1
       return @PRIORITY_STICKY if classes.indexOf("sticky") != -1
 
+  getTopics: =>
+    topics = []
+    topic = @TOPIC_REGEX.exec @messageBody
+
+    while topic? && topic.length > 1
+      topics.push topic[1]
+      topic = @TOPIC_REGEX.exec @messageBody
+
+    return topics.sort()
+
   decodeHtml: (html) ->
     txt = document.createElement "textarea"
     txt.innerHTML = html
@@ -97,6 +109,7 @@ class Minuta
   id: null
   targetUrl: null
   priority: null
+  topics: null
 
   constructor: (@thumbnail, @time, @message, @id, @targetUrl, @priority) ->
 
@@ -125,6 +138,7 @@ class Notifier
   currentSettings: {}
   downloader: null
   parser: null
+  topics: []
 
   constructor: (@downloader, @parser) ->
     chrome.notifications.onClosed.addListener @notificationClosed;
@@ -155,7 +169,9 @@ class Notifier
         break if Object.keys(messages).length == parseInt(@currentSettings['messageCount'])
 
         message = parser.parse rawMessage
-        continue if message.priority is parser.PRIORITY_STICKY
+        if message.priority is parser.PRIORITY_STICKY
+          @updateTopics message
+          continue
 
         messages[message.id] = message
 
@@ -173,7 +189,7 @@ class Notifier
               , delay
             delay += 100 # because we're trying to be sure it gets executed in proper order
 
-        if silently
+        if silently and Object.keys(storage).length
           console.log "silent iteration, skipping following messages..."
           console.log storage
           chrome.storage.local.set storage
@@ -192,25 +208,32 @@ class Notifier
       callback() if callback?
 
 
-  notifyArticle: (minuta) ->
+  updateTopics: (message) ->
+    if @topics.toString() != message.topics.toString()
+      chrome.storage.local.set {
+        "topics": message.topics
+      }, =>
+        @topics = message.topics
+
+  notifyArticle: (message) ->
     options = JSON.parse(JSON.stringify(@DEFAULT_NOTIFICATION_OPTIONS));
     meta =
-      "targetUrl": minuta.targetUrl
+      "targetUrl": message.targetUrl
 
-    unless (minuta.id? and minuta.text?)
+    unless (message.id? and message.text?)
       console.warn("Could not parse the message from the source, skipping...");
       return false;
 
-    options.message = minuta.text;
+    options.message = message.text;
 
-    if minuta.time?
-      options.title = "[" + minuta.time + "] " + options.title
+    if message.time?
+      options.title = "[" + message.time + "] " + options.title
 
-    if minuta.thumbnail?
+    if message.thumbnail?
       options.type = "image"
-      options.imageUrl = minuta.thumbnail
+      options.imageUrl = message.thumbnail
 
-    @doNotify minuta.id, options, meta
+    @doNotify message.id, options, meta
 
     return true
 

@@ -32,6 +32,7 @@
 
   MinutaAjaxMessageParser = (function() {
     function MinutaAjaxMessageParser() {
+      this.getTopics = bind(this.getTopics, this);
       this.getPriority = bind(this.getPriority, this);
       this.getTargetUrl = bind(this.getTargetUrl, this);
       this.getId = bind(this.getId, this);
@@ -55,6 +56,8 @@
 
     MinutaAjaxMessageParser.prototype.YOUTUBE_REGEX = /youtube\.com\/embed\/(.*?)[\/\?]/;
 
+    MinutaAjaxMessageParser.prototype.TOPIC_REGEX = /"#tema=(.*?)"/g;
+
     MinutaAjaxMessageParser.prototype.PRIORITY_STICKY = "sticky";
 
     MinutaAjaxMessageParser.prototype.PRIORITY_IMPORTANT = "important";
@@ -69,7 +72,8 @@
         text: this.getText(),
         id: this.getId(),
         targetUrl: this.getTargetUrl(),
-        priority: this.getPriority()
+        priority: this.getPriority(),
+        topics: this.getTopics()
       };
     };
 
@@ -132,6 +136,17 @@
       }
     };
 
+    MinutaAjaxMessageParser.prototype.getTopics = function() {
+      var topic, topics;
+      topics = [];
+      topic = this.TOPIC_REGEX.exec(this.messageBody);
+      while ((topic != null) && topic.length > 1) {
+        topics.push(topic[1]);
+        topic = this.TOPIC_REGEX.exec(this.messageBody);
+      }
+      return topics.sort();
+    };
+
     MinutaAjaxMessageParser.prototype.decodeHtml = function(html) {
       var txt;
       txt = document.createElement("textarea");
@@ -155,6 +170,8 @@
     Minuta.prototype.targetUrl = null;
 
     Minuta.prototype.priority = null;
+
+    Minuta.prototype.topics = null;
 
     function Minuta(thumbnail, time, message1, id1, targetUrl1, priority) {
       this.thumbnail = thumbnail;
@@ -198,6 +215,8 @@
     Notifier.prototype.downloader = null;
 
     Notifier.prototype.parser = null;
+
+    Notifier.prototype.topics = [];
 
     function Notifier(downloader1, parser1) {
       this.downloader = downloader1;
@@ -244,6 +263,7 @@
             }
             message = parser.parse(rawMessage);
             if (message.priority === parser.PRIORITY_STICKY) {
+              _this.updateTopics(message);
               continue;
             }
             messages[message.id] = message;
@@ -270,7 +290,7 @@
                 delay += 100;
               }
             }
-            if (silently) {
+            if (silently && Object.keys(storage).length) {
               console.log("silent iteration, skipping following messages...");
               console.log(storage);
               chrome.storage.local.set(storage);
@@ -297,25 +317,37 @@
       })(this));
     };
 
-    Notifier.prototype.notifyArticle = function(minuta) {
+    Notifier.prototype.updateTopics = function(message) {
+      if (this.topics.toString() !== message.topics.toString()) {
+        return chrome.storage.local.set({
+          "topics": message.topics
+        }, (function(_this) {
+          return function() {
+            return _this.topics = message.topics;
+          };
+        })(this));
+      }
+    };
+
+    Notifier.prototype.notifyArticle = function(message) {
       var meta, options;
       options = JSON.parse(JSON.stringify(this.DEFAULT_NOTIFICATION_OPTIONS));
       meta = {
-        "targetUrl": minuta.targetUrl
+        "targetUrl": message.targetUrl
       };
-      if (!((minuta.id != null) && (minuta.text != null))) {
+      if (!((message.id != null) && (message.text != null))) {
         console.warn("Could not parse the message from the source, skipping...");
         return false;
       }
-      options.message = minuta.text;
-      if (minuta.time != null) {
-        options.title = "[" + minuta.time + "] " + options.title;
+      options.message = message.text;
+      if (message.time != null) {
+        options.title = "[" + message.time + "] " + options.title;
       }
-      if (minuta.thumbnail != null) {
+      if (message.thumbnail != null) {
         options.type = "image";
-        options.imageUrl = minuta.thumbnail;
+        options.imageUrl = message.thumbnail;
       }
-      this.doNotify(minuta.id, options, meta);
+      this.doNotify(message.id, options, meta);
       return true;
     };
 

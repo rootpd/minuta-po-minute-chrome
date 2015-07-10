@@ -68,9 +68,51 @@ function removeSnoozeTimer() {
     });
 }
 
+function initTopicSelector() {
+    var topicSelector = document.getElementById("topic-selector");
+    var topicSelectorLastChild = document.getElementById("unbind-topic");
+
+    chrome.storage.local.get("topics", function(val) {
+        for (var i in val['topics']) {
+            var a = document.createElement('a');
+            a.textContent = val['topics'][i];
+            a.classList.add('minutapominuteodkaz');
+            a.classList.add('minutapominutefilter');
+            a.classList.add('minutatopic');
+            a.addEventListener("click", setTopicFilter);
+            a.href = "#tema=" + val['topics'][i];
+            topicSelector.insertBefore(a, topicSelectorLastChild);
+        }
+    });
+}
+
+function setTopicFilter(evt) {
+    chrome.storage.local.set({"selectedTopic": evt.srcElement.text}, function() {
+        var topics = document.getElementsByClassName("minutatopic");
+        for (var i=0; i < topics.length; i++) {
+            topics[i].style.display = 'none';
+        }
+        evt.srcElement.blur();
+        evt.srcElement.style.display = 'inline-block';
+
+        document.getElementById("unbind-topic").style.display = 'inline-block';
+    });
+}
+
+function removeTopicFilter() {
+    document.getElementById("unbind-topic").style.display = 'none';
+
+    var topics = document.getElementsByClassName("minutatopic");
+    for (var i=0; i < topics.length; i++) {
+        topics[i].style.display = 'inline-block';
+    }
+}
+
 window.addEventListener("load", function() {
+    initTopicSelector();
     initSnoozeTimer();
     document.getElementById("set-snooze").addEventListener("click", setSnoozeTimer);
     document.getElementById("unbind-snooze").addEventListener("click", removeSnoozeTimer);
+    document.getElementById("unbind-topic").addEventListener("click", removeTopicFilter);
 });
 
