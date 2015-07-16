@@ -1,5 +1,5 @@
 class MinutaAjaxDownloader
-  URI: "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag=0"
+  URI: "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag="
   ARTICLE_REGEX: /(<article[\s\S]*?<\/article>)/ig
 
   xhrDownload: (responseType, URI, successCallback, errorCallback) ->
@@ -24,6 +24,7 @@ class MinutaAjaxMessageParser
   ARTICLE_ID_REGEX: /article id="mpm-(\d+)"/
   PRIORITY_REGEX: /article.*?class="([^>]*?)"/
   YOUTUBE_REGEX: /youtube\.com\/embed\/(.*?)[\/\?]/
+  TOPIC_REGEX: /"#tema=(.*?)".*?>(.*?)</g
 
   PRIORITY_STICKY: "sticky"
   PRIORITY_IMPORTANT: "important"
@@ -34,12 +35,14 @@ class MinutaAjaxMessageParser
     @messageBody = messageBody.replace /\s+/g," "
 
     return {
-    thumbnail: @getFigure()
-    time: @getTimePretty()
-    text: @getText()
-    id: @getId()
-    targetUrl: @getTargetUrl()
-    priority: @getPriority()
+      thumbnail: @getFigure()
+      time: @getTimePretty()
+      text: @getText()
+      html: @getHtml()
+      id: @getId()
+      targetUrl: @getTargetUrl()
+      priority: @getPriority()
+      topics: @getTopics()
     }
 
   getFigure: =>
@@ -68,6 +71,10 @@ class MinutaAjaxMessageParser
       value = matches[0].replace(@HTML_REGEX, "")
       return @decodeHtml(value)
 
+  getHtml: ->
+    matches = @messageBody.match(@MESSAGE_REGEX);
+    return matches[0] if (matches? && matches.length > 0)
+
   getId: =>
     matches = @messageBody.match(@ARTICLE_ID_REGEX);
     return matches[1] if matches?
@@ -85,6 +92,16 @@ class MinutaAjaxMessageParser
       return @PRIORITY_IMPORTANT if classes.indexOf("important") != -1
       return @PRIORITY_STICKY if classes.indexOf("sticky") != -1
 
+  getTopics: =>
+    topics = {}
+    topic = @TOPIC_REGEX.exec @messageBody
+
+    while topic? && topic.length > 2
+      topics[topic[1]] = topic[2]
+      topic = @TOPIC_REGEX.exec @messageBody
+
+    return topics
+
   decodeHtml: (html) ->
     txt = document.createElement "textarea"
     txt.innerHTML = html
@@ -97,6 +114,7 @@ class Minuta
   id: null
   targetUrl: null
   priority: null
+  topics: null
 
   constructor: (@thumbnail, @time, @message, @id, @targetUrl, @priority) ->
 
@@ -104,27 +122,32 @@ class Notifier
   LOGO: "/images/icon512.png"
   BUTTONS: [
     chrome.i18n.getMessage("readMoreButton")
-  ];
+  ]
 
-  DEFAULT_SETTINGS:
-    "sound": "no-sound",
-    "interval": 5,
-    "messageCount": 3,
-    "importantOnly": false,
-    "displayTime": 10,
-    "notificationClick": "open",
-    "snooze": "off",
+  DEFAULT_SYNC_SETTINGS:
+    "sound": "no-sound"
+    "interval": 5
+    "messageCount": 3
+    "importantOnly": false
+    "displayTime": 10
+    "notificationClick": "open"
+    "snooze": "off"
+
+  DEFAULT_LOCAL_SETTINGS:
+    "selectedTopic": "0"
 
   DEFAULT_NOTIFICATION_OPTIONS:
-    type : "basic",
-    title: chrome.i18n.getMessage("notificationTitle"),
-    message: null,
+    type : "basic"
+    title: chrome.i18n.getMessage("notificationTitle")
+    message: null
     priority: 1
 
   notificationSound: null
   currentSettings: {}
   downloader: null
   parser: null
+  topics: []
+  selectedTopic: "0"
 
   constructor: (@downloader, @parser) ->
     chrome.notifications.onClosed.addListener @notificationClosed;
@@ -146,7 +169,7 @@ class Notifier
       if @currentSettings['interval']? and parseInt(@currentSettings['interval']) >= 1
       then parseInt(@currentSettings['interval']) else 1
 
-    downloader.xhrDownload "text", downloader.URI, (event) =>
+    downloader.xhrDownload "text", downloader.URI + @selectedTopic, (event) =>
       rawMessages = downloader.getMessages event.target.response;
       storage = {}
       messages = {}
@@ -155,7 +178,14 @@ class Notifier
         break if Object.keys(messages).length == parseInt(@currentSettings['messageCount'])
 
         message = parser.parse rawMessage
-        continue if message.priority is parser.PRIORITY_STICKY
+
+        if message.priority is parser.PRIORITY_STICKY
+          if @selectedTopic == "0"
+            @updateTopics message
+          else
+            @updateStickyTopicMessage message
+
+          continue
 
         messages[message.id] = message
 
@@ -173,7 +203,7 @@ class Notifier
               , delay
             delay += 100 # because we're trying to be sure it gets executed in proper order
 
-        if silently
+        if silently and Object.keys(storage).length
           console.log "silent iteration, skipping following messages..."
           console.log storage
           chrome.storage.local.set storage
@@ -181,36 +211,50 @@ class Notifier
         setTimeout @run.bind(this, false), 60000 * minutesInterval
 
   reloadSettings: (callback) =>
-    chrome.storage.sync.get @DEFAULT_SETTINGS, (val) =>
+    chrome.storage.sync.get @DEFAULT_SYNC_SETTINGS, (val) =>
       @currentSettings = val;
       chrome.storage.sync.clear()
       chrome.storage.sync.set val
 
       if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSound.src.indexOf(val['sound']) == -1)
         @notificationSound = new Audio('sounds/' + val['sound'] + '.mp3')
+        
+      chrome.storage.local.get @DEFAULT_LOCAL_SETTINGS, (wal) =>
+        @selectedTopic = wal['selectedTopic']
+        callback() if callback?
 
-      callback() if callback?
 
+  updateTopics: (message) =>
+    if Object.keys(@topics).toString() != Object.keys(message.topics).toString()
+      chrome.storage.local.set {
+        "topics": message.topics
+      }, =>
+        @topics = message.topics
 
-  notifyArticle: (minuta) ->
+  updateStickyTopicMessage: (message) ->
+    chrome.storage.local.set {
+      "stickyTopicMessage": message.html
+    }
+
+  notifyArticle: (message) ->
     options = JSON.parse(JSON.stringify(@DEFAULT_NOTIFICATION_OPTIONS));
     meta =
-      "targetUrl": minuta.targetUrl
+      "targetUrl": message.targetUrl
 
-    unless (minuta.id? and minuta.text?)
+    unless (message.id? and message.text?)
       console.warn("Could not parse the message from the source, skipping...");
       return false;
 
-    options.message = minuta.text;
+    options.message = message.text;
 
-    if minuta.time?
-      options.title = "[" + minuta.time + "] " + options.title
+    if message.time?
+      options.title = "[" + message.time + "] " + options.title
 
-    if minuta.thumbnail?
+    if message.thumbnail?
       options.type = "image"
-      options.imageUrl = minuta.thumbnail
+      options.imageUrl = message.thumbnail
 
-    @doNotify minuta.id, options, meta
+    @doNotify message.id, options, meta
 
     return true
 

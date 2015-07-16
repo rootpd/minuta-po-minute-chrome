@@ -17,7 +17,7 @@ body.popup {
     font-family: 'Open Sans', sans-serif;
     font-size: 10pt;
     padding: 10px;
-    width: 210px;
+    width: 300px;
 }
 
 button {
@@ -30,6 +30,11 @@ button {
     box-shadow: none !important;
     border-color: #80091D !important;
     background: none !important;
+}
+
+#sticky-topic-message {
+    font-size: 12px;
+    margin-top: 10px;
 }
 
 .a-minute, .a-minute select {
@@ -68,7 +73,7 @@ input.focus, select.focus {
     padding: 10px 0;
 }
 .a-minute.compact {
-    padding: 3px 0;
+    padding: 3px 0 9px;
 }
 
 .i {
@@ -104,7 +109,7 @@ input.focus, select.focus {
 }
 
 body.popup select {
-    width: 110px;
+    width: 155px;
     display: inline-block;
 }
 body.popup .e-button {
@@ -113,9 +118,16 @@ body.popup .e-button {
     height: auto;
     padding: 6px;
     line-height: initial;
-    margin: 0 0 0 5px;
+    margin: 0 0 0 3px;
     display: inline-block;
 }
 body.popup .e-button.compact {
-    padding: 0 4px;
+    padding: 2px 4px;
+    font-size: 13px;
+}
+.minutatopic {
+    margin-right: 3px;
+}
+.e-headerbox {
+    padding: 5px;
 }
