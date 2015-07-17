@@ -18,7 +18,8 @@ class MinutaAjaxDownloader
 class MinutaAjaxMessageParser
   TARGET_URL_REGEX: /https?:\/\/dennikn.sk\/minuta\/(\d+)/
   TIME_REGEX: /(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)/
-  MESSAGE_REGEX: /<p>(.*?)<\/p>/gi
+  MESSAGE_REGEX: /<article.*?>(.*?)<\/article>/g
+  MESSAGE_EXCERPT_REGEX: /<p>(.*?)<\/p>/gi
   HTML_REGEX: /(<([^>]+)>)/ig
   IMAGE_REGEX: /<img.*?src="(.*?)"/
   ARTICLE_ID_REGEX: /article id="mpm-(\d+)"/
@@ -66,14 +67,14 @@ class MinutaAjaxMessageParser
       return ("0" + matches[4]).slice(-2) + ":" + ("0" + matches[5]).slice(-2);
 
   getText: ->
-    matches = @messageBody.match(@MESSAGE_REGEX);
+    matches = @messageBody.match(@MESSAGE_EXCERPT_REGEX);
     if (matches? && matches.length > 0)
       value = matches[0].replace(@HTML_REGEX, "")
       return @decodeHtml(value)
 
   getHtml: ->
-    matches = @messageBody.match(@MESSAGE_REGEX);
-    return matches[0] if (matches? && matches.length > 0)
+    matches = @MESSAGE_REGEX.exec @messageBody
+    return matches[1] if matches?
 
   getId: =>
     matches = @messageBody.match(@ARTICLE_ID_REGEX);
@@ -246,6 +247,7 @@ class Notifier
       return false;
 
     options.message = message.text;
+    options.title = @selectedTopic
 
     if message.time?
       options.title = "[" + message.time + "] " + options.title

@@ -44,7 +44,9 @@
 
     MinutaAjaxMessageParser.prototype.TIME_REGEX = /(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)/;
 
-    MinutaAjaxMessageParser.prototype.MESSAGE_REGEX = /<p>(.*?)<\/p>/gi;
+    MinutaAjaxMessageParser.prototype.MESSAGE_REGEX = /<article.*?>(.*?)<\/article>/g;
+
+    MinutaAjaxMessageParser.prototype.MESSAGE_EXCERPT_REGEX = /<p>(.*?)<\/p>/gi;
 
     MinutaAjaxMessageParser.prototype.HTML_REGEX = /(<([^>]+)>)/ig;
 
@@ -100,7 +102,7 @@
 
     MinutaAjaxMessageParser.prototype.getText = function() {
       var matches, value;
-      matches = this.messageBody.match(this.MESSAGE_REGEX);
+      matches = this.messageBody.match(this.MESSAGE_EXCERPT_REGEX);
       if ((matches != null) && matches.length > 0) {
         value = matches[0].replace(this.HTML_REGEX, "");
         return this.decodeHtml(value);
@@ -109,9 +111,9 @@
 
     MinutaAjaxMessageParser.prototype.getHtml = function() {
       var matches;
-      matches = this.messageBody.match(this.MESSAGE_REGEX);
-      if ((matches != null) && matches.length > 0) {
-        return matches[0];
+      matches = this.MESSAGE_REGEX.exec(this.messageBody);
+      if (matches != null) {
+        return matches[1];
       }
     };
 
@@ -369,6 +371,7 @@
         return false;
       }
       options.message = message.text;
+      options.title = this.selectedTopic;
       if (message.time != null) {
         options.title = "[" + message.time + "] " + options.title;
       }
