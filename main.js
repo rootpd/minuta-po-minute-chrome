@@ -70,9 +70,10 @@
       this.messageBody = messageBody.replace(/\s+/g, " ");
       return {
         thumbnail: this.getFigure(),
-        time: this.getTimePretty(),
+        timePretty: this.getTimePretty(),
         text: this.getText(),
         html: this.getHtml(),
+        excerpt: this.getHtmlExcerpt(),
         id: this.getId(),
         targetUrl: this.getTargetUrl(),
         priority: this.getPriority(),
@@ -106,6 +107,14 @@
       if ((matches != null) && matches.length > 0) {
         value = matches[0].replace(this.HTML_REGEX, "");
         return this.decodeHtml(value);
+      }
+    };
+
+    MinutaAjaxMessageParser.prototype.getHtmlExcerpt = function() {
+      var matches;
+      matches = this.messageBody.match(this.MESSAGE_EXCERPT_REGEX);
+      if (matches != null) {
+        return matches[0];
       }
     };
 
@@ -292,6 +301,9 @@
             }
             messages[message.id] = message;
           }
+          chrome.storage.local.set({
+            "latestMessageIds": Object.keys(messages)
+          });
           return chrome.storage.local.get(Object.keys(messages), function(alreadyNotifiedMessages) {
             var delay, id;
             delay = 0;
@@ -303,7 +315,9 @@
               if (silently || (_this.currentSettings['importantOnly'] && message.priority !== parser.PRIORITY_IMPORTANT)) {
                 storage[message.id] = {
                   "skipped": true,
-                  "targetUrl": message.targetUrl
+                  "targetUrl": message.targetUrl,
+                  "excerpt": message.excerpt,
+                  "timePretty": message.timePretty
                 };
               } else {
                 (function(message) {
@@ -367,7 +381,10 @@
       var meta, options;
       options = JSON.parse(JSON.stringify(this.DEFAULT_NOTIFICATION_OPTIONS));
       meta = {
-        "targetUrl": message.targetUrl
+        "targetUrl": message.targetUrl,
+        "excerpt": message.excerpt,
+        "skipped": false,
+        "timePretty": message.timePretty
       };
       if (!((message.id != null) && (message.text != null))) {
         console.warn("Could not parse the message from the source, skipping...");
@@ -377,8 +394,8 @@
       if (this.selectedTopic !== "0") {
         options.title = this.topics[this.selectedTopic];
       }
-      if (message.time != null) {
-        options.title = "[" + message.time + "] " + options.title;
+      if (message.timePretty != null) {
+        options.title = "[" + message.timePretty + "] " + options.title;
       }
       if (message.thumbnail != null) {
         options.type = "image";

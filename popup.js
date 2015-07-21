@@ -118,9 +118,13 @@ function setTopicFilterCallback(selectedElementId) {
     document.getElementById("unbind-topic").style.display = 'inline-block';
 
     chrome.storage.local.get("stickyTopicMessage", function(val) {
+        var message = document.getElementById('sticky-topic-message');
+
         if (typeof val['stickyTopicMessage'] !== 'undefined' && val['stickyTopicMessage'].length > 5) {
-            var message = document.getElementById('sticky-topic-message');
             message.innerHTML = val['stickyTopicMessage'];
+            message.style.display = "block";
+        } else {
+            message.style.display = "none";
         }
     });
 }
@@ -138,9 +142,48 @@ function removeTopicFilter() {
     chrome.storage.local.remove("stickyTopicMessage");
 }
 
+function initLatestMessages() {
+    chrome.storage.local.get("latestMessageIds", function(val) {
+        var query = {};
+        for (var i in val['latestMessageIds']) {
+            if (val['latestMessageIds'].hasOwnProperty(i)) {
+                query[val['latestMessageIds'][i]] = null;
+            }
+        }
+
+        chrome.storage.local.get(query, function(wal) {
+            var latestMessages = document.getElementById("latest-messages");
+            var ids = Object.keys(query).sort().reverse();
+
+            for (i=0; i<ids.length; i++){
+                var id = ids[i];
+                if (id == "undefined") {
+                    continue;
+                }
+
+                var article = document.createElement('article');
+                var title = '<h3 class="title"><a href="' + wal[id]['targetUrl'] + '"><time class="d-posted">' + wal[id]['timePretty'] + '</time></a></h3>';
+
+                article.innerHTML = title + ' ' + wal[id]['excerpt'];
+                article.classList.add('a-minute');
+                article.id = "mpm-" + id;
+
+                latestMessages.appendChild(article);
+            }
+
+            var anchors = latestMessages.getElementsByTagName('a');
+            for (i=0; i<anchors.length; i++){
+                anchors[i].setAttribute('target', '_blank');
+            }
+        });
+    });
+}
+
 window.addEventListener("load", function() {
     initTopicSelector();
     initSnoozeTimer();
+    initLatestMessages();
+
     document.getElementById("set-snooze").addEventListener("click", setSnoozeTimer);
     document.getElementById("unbind-snooze").addEventListener("click", removeSnoozeTimer);
     document.getElementById("unbind-topic").addEventListener("click", removeTopicFilter);
