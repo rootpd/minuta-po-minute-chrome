@@ -157,6 +157,10 @@ function initLatestMessages() {
 
             for (i=0; i<ids.length; i++){
                 var id = ids[i];
+                if (id == "undefined") {
+                    continue;
+                }
+
                 var article = document.createElement('article');
                 var title = '<h3 class="title"><a href="' + wal[id]['targetUrl'] + '"><time class="d-posted">' + wal[id]['timePretty'] + '</time></a></h3>';
 
