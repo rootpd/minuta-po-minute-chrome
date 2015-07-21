@@ -8,7 +8,7 @@
       this.getMessages = bind(this.getMessages, this);
     }
 
-    MinutaAjaxDownloader.prototype.URI = "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag=0";
+    MinutaAjaxDownloader.prototype.URI = "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag=";
 
     MinutaAjaxDownloader.prototype.ARTICLE_REGEX = /(<article[\s\S]*?<\/article>)/ig;
 
@@ -32,6 +32,7 @@
 
   MinutaAjaxMessageParser = (function() {
     function MinutaAjaxMessageParser() {
+      this.getTopics = bind(this.getTopics, this);
       this.getPriority = bind(this.getPriority, this);
       this.getTargetUrl = bind(this.getTargetUrl, this);
       this.getId = bind(this.getId, this);
@@ -43,7 +44,9 @@
 
     MinutaAjaxMessageParser.prototype.TIME_REGEX = /(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)/;
 
-    MinutaAjaxMessageParser.prototype.MESSAGE_REGEX = /<p>(.*?)<\/p>/gi;
+    MinutaAjaxMessageParser.prototype.MESSAGE_REGEX = /<article.*?>(.*?)<\/article>/g;
+
+    MinutaAjaxMessageParser.prototype.MESSAGE_EXCERPT_REGEX = /<p>(.*?)<\/p>/gi;
 
     MinutaAjaxMessageParser.prototype.HTML_REGEX = /(<([^>]+)>)/ig;
 
@@ -55,6 +58,8 @@
 
     MinutaAjaxMessageParser.prototype.YOUTUBE_REGEX = /youtube\.com\/embed\/(.*?)[\/\?]/;
 
+    MinutaAjaxMessageParser.prototype.TOPIC_REGEX = /"#tema=(.*?)".*?>(.*?)</g;
+
     MinutaAjaxMessageParser.prototype.PRIORITY_STICKY = "sticky";
 
     MinutaAjaxMessageParser.prototype.PRIORITY_IMPORTANT = "important";
@@ -65,11 +70,14 @@
       this.messageBody = messageBody.replace(/\s+/g, " ");
       return {
         thumbnail: this.getFigure(),
-        time: this.getTimePretty(),
+        timePretty: this.getTimePretty(),
         text: this.getText(),
+        html: this.getHtml(),
+        excerpt: this.getHtmlExcerpt(),
         id: this.getId(),
         targetUrl: this.getTargetUrl(),
-        priority: this.getPriority()
+        priority: this.getPriority(),
+        topics: this.getTopics()
       };
     };
 
@@ -95,10 +103,26 @@
 
     MinutaAjaxMessageParser.prototype.getText = function() {
       var matches, value;
-      matches = this.messageBody.match(this.MESSAGE_REGEX);
+      matches = this.messageBody.match(this.MESSAGE_EXCERPT_REGEX);
       if ((matches != null) && matches.length > 0) {
         value = matches[0].replace(this.HTML_REGEX, "");
         return this.decodeHtml(value);
+      }
+    };
+
+    MinutaAjaxMessageParser.prototype.getHtmlExcerpt = function() {
+      var matches;
+      matches = this.messageBody.match(this.MESSAGE_EXCERPT_REGEX);
+      if (matches != null) {
+        return matches[0];
+      }
+    };
+
+    MinutaAjaxMessageParser.prototype.getHtml = function() {
+      var matches;
+      matches = this.MESSAGE_REGEX.exec(this.messageBody);
+      if (matches != null) {
+        return matches[1];
       }
     };
 
@@ -132,6 +156,17 @@
       }
     };
 
+    MinutaAjaxMessageParser.prototype.getTopics = function() {
+      var topic, topics;
+      topics = {};
+      topic = this.TOPIC_REGEX.exec(this.messageBody);
+      while ((topic != null) && topic.length > 2) {
+        topics[topic[1]] = topic[2];
+        topic = this.TOPIC_REGEX.exec(this.messageBody);
+      }
+      return topics;
+    };
+
     MinutaAjaxMessageParser.prototype.decodeHtml = function(html) {
       var txt;
       txt = document.createElement("textarea");
@@ -156,6 +191,8 @@
 
     Minuta.prototype.priority = null;
 
+    Minuta.prototype.topics = null;
+
     function Minuta(thumbnail, time, message1, id1, targetUrl1, priority) {
       this.thumbnail = thumbnail;
       this.time = time;
@@ -174,13 +211,19 @@
 
     Notifier.prototype.BUTTONS = [chrome.i18n.getMessage("readMoreButton")];
 
-    Notifier.prototype.DEFAULT_SETTINGS = {
+    Notifier.prototype.DEFAULT_SYNC_SETTINGS = {
       "sound": "no-sound",
       "interval": 5,
       "messageCount": 3,
       "importantOnly": false,
       "displayTime": 10,
-      "notificationClick": "open"
+      "notificationClick": "open",
+      "snooze": "off"
+    };
+
+    Notifier.prototype.DEFAULT_LOCAL_SETTINGS = {
+      "selectedTopic": "0",
+      "topics": {}
     };
 
     Notifier.prototype.DEFAULT_NOTIFICATION_OPTIONS = {
@@ -198,6 +241,10 @@
 
     Notifier.prototype.parser = null;
 
+    Notifier.prototype.topics = {};
+
+    Notifier.prototype.selectedTopic = "0";
+
     function Notifier(downloader1, parser1) {
       this.downloader = downloader1;
       this.parser = parser1;
@@ -206,26 +253,33 @@
       this.notificationClicked = bind(this.notificationClicked, this);
       this.notificationClosed = bind(this.notificationClosed, this);
       this.creationCallback = bind(this.creationCallback, this);
+      this.updateTopics = bind(this.updateTopics, this);
       this.reloadSettings = bind(this.reloadSettings, this);
       this.downloadMessages = bind(this.downloadMessages, this);
       chrome.notifications.onClosed.addListener(this.notificationClosed);
       chrome.notifications.onClicked.addListener(this.notificationClicked);
       chrome.notifications.onButtonClicked.addListener(this.notificationBtnClick);
-      this.reloadSettings();
     }
 
-    Notifier.prototype.run = function(silently) {
+    Notifier.prototype.run = function(forceSilent) {
       var downloader, parser;
       downloader = new this.downloader();
       parser = new this.parser();
-      this.reloadSettings();
-      return this.downloadMessages(downloader, parser, silently);
+      return this.reloadSettings((function(_this) {
+        return function() {
+          return _this.downloadMessages(downloader, parser, forceSilent);
+        };
+      })(this));
     };
 
     Notifier.prototype.downloadMessages = function(downloader, parser, silently) {
       var minutesInterval;
+      if (!silently) {
+        silently = this.currentSettings['snooze'] !== 'off' && this.currentSettings['snooze'] > (new Date()).getTime();
+      }
       minutesInterval = (this.currentSettings['interval'] != null) && parseInt(this.currentSettings['interval']) >= 1 ? parseInt(this.currentSettings['interval']) : 1;
-      return downloader.xhrDownload("text", downloader.URI, (function(_this) {
+      chrome.storage.local.remove("stickyTopicMessage");
+      return downloader.xhrDownload("text", downloader.URI + this.selectedTopic, (function(_this) {
         return function(event) {
           var i, len, message, messages, rawMessage, rawMessages, storage;
           rawMessages = downloader.getMessages(event.target.response);
@@ -238,10 +292,18 @@
             }
             message = parser.parse(rawMessage);
             if (message.priority === parser.PRIORITY_STICKY) {
+              if (_this.selectedTopic === "0") {
+                _this.updateTopics(message);
+              } else {
+                _this.updateStickyTopicMessage(message);
+              }
               continue;
             }
             messages[message.id] = message;
           }
+          chrome.storage.local.set({
+            "latestMessageIds": Object.keys(messages)
+          });
           return chrome.storage.local.get(Object.keys(messages), function(alreadyNotifiedMessages) {
             var delay, id;
             delay = 0;
@@ -253,7 +315,9 @@
               if (silently || (_this.currentSettings['importantOnly'] && message.priority !== parser.PRIORITY_IMPORTANT)) {
                 storage[message.id] = {
                   "skipped": true,
-                  "targetUrl": message.targetUrl
+                  "targetUrl": message.targetUrl,
+                  "excerpt": message.excerpt,
+                  "timePretty": message.timePretty
                 };
               } else {
                 (function(message) {
@@ -264,7 +328,7 @@
                 delay += 100;
               }
             }
-            if (silently) {
+            if (silently && Object.keys(storage).length) {
               console.log("silent iteration, skipping following messages...");
               console.log(storage);
               chrome.storage.local.set(storage);
@@ -275,38 +339,69 @@
       })(this));
     };
 
-    Notifier.prototype.reloadSettings = function() {
-      return chrome.storage.sync.get(this.DEFAULT_SETTINGS, (function(_this) {
+    Notifier.prototype.reloadSettings = function(callback) {
+      return chrome.storage.sync.get(this.DEFAULT_SYNC_SETTINGS, (function(_this) {
         return function(val) {
           _this.currentSettings = val;
           chrome.storage.sync.clear();
           chrome.storage.sync.set(val);
           if (val['sound'] !== 'no-sound' && ((_this.notificationSound == null) || _this.notificationSound.src.indexOf(val['sound']) === -1)) {
-            return _this.notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
+            _this.notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
           }
+          return chrome.storage.local.get(_this.DEFAULT_LOCAL_SETTINGS, function(wal) {
+            _this.selectedTopic = wal['selectedTopic'];
+            _this.topics = wal['topics'];
+            if (callback != null) {
+              return callback();
+            }
+          });
         };
       })(this));
     };
 
-    Notifier.prototype.notifyArticle = function(minuta) {
+    Notifier.prototype.updateTopics = function(message) {
+      if (Object.keys(this.topics).toString() !== Object.keys(message.topics).toString()) {
+        return chrome.storage.local.set({
+          "topics": message.topics
+        }, (function(_this) {
+          return function() {
+            return _this.topics = message.topics;
+          };
+        })(this));
+      }
+    };
+
+    Notifier.prototype.updateStickyTopicMessage = function(message) {
+      return chrome.storage.local.set({
+        "stickyTopicMessage": message.html
+      });
+    };
+
+    Notifier.prototype.notifyArticle = function(message) {
       var meta, options;
       options = JSON.parse(JSON.stringify(this.DEFAULT_NOTIFICATION_OPTIONS));
       meta = {
-        "targetUrl": minuta.targetUrl
+        "targetUrl": message.targetUrl,
+        "excerpt": message.excerpt,
+        "skipped": false,
+        "timePretty": message.timePretty
       };
-      if (!((minuta.id != null) && (minuta.text != null))) {
+      if (!((message.id != null) && (message.text != null))) {
         console.warn("Could not parse the message from the source, skipping...");
         return false;
       }
-      options.message = minuta.text;
-      if (minuta.time != null) {
-        options.title = "[" + minuta.time + "] " + options.title;
+      options.message = message.text;
+      if (this.selectedTopic !== "0") {
+        options.title = this.topics[this.selectedTopic];
       }
-      if (minuta.thumbnail != null) {
+      if (message.timePretty != null) {
+        options.title = "[" + message.timePretty + "] " + options.title;
+      }
+      if (message.thumbnail != null) {
         options.type = "image";
-        options.imageUrl = minuta.thumbnail;
+        options.imageUrl = message.thumbnail;
       }
-      this.doNotify(minuta.id, options, meta);
+      this.doNotify(message.id, options, meta);
       return true;
     };
 
