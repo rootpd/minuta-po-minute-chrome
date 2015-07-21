@@ -37,9 +37,10 @@ class MinutaAjaxMessageParser
 
     return {
       thumbnail: @getFigure()
-      time: @getTimePretty()
+      timePretty: @getTimePretty()
       text: @getText()
       html: @getHtml()
+      excerpt: @getHtmlExcerpt()
       id: @getId()
       targetUrl: @getTargetUrl()
       priority: @getPriority()
@@ -71,6 +72,10 @@ class MinutaAjaxMessageParser
     if (matches? && matches.length > 0)
       value = matches[0].replace(@HTML_REGEX, "")
       return @decodeHtml(value)
+
+  getHtmlExcerpt: ->
+    matches = @messageBody.match(@MESSAGE_EXCERPT_REGEX);
+    return matches[0] if matches?
 
   getHtml: ->
     matches = @MESSAGE_REGEX.exec @messageBody
@@ -193,13 +198,19 @@ class Notifier
 
         messages[message.id] = message
 
+      chrome.storage.local.set {"latestMessageIds": Object.keys(messages)}
       chrome.storage.local.get Object.keys(messages), (alreadyNotifiedMessages) =>
         delay = 0
         for id, message of messages
           continue if message.id of alreadyNotifiedMessages
 
           if (silently) or (@currentSettings['importantOnly'] and message.priority != parser.PRIORITY_IMPORTANT)
-            storage[message.id] = { "skipped": true, "targetUrl": message.targetUrl }
+            storage[message.id] = {
+              "skipped": true
+              "targetUrl": message.targetUrl
+              "excerpt": message.excerpt
+              "timePretty": message.timePretty
+            }
           else
             do (message) =>
               setTimeout =>
@@ -245,6 +256,9 @@ class Notifier
     options = JSON.parse(JSON.stringify(@DEFAULT_NOTIFICATION_OPTIONS));
     meta =
       "targetUrl": message.targetUrl
+      "excerpt": message.excerpt
+      "skipped": false
+      "timePretty": message.timePretty
 
     unless (message.id? and message.text?)
       console.warn("Could not parse the message from the source, skipping...");
@@ -253,8 +267,8 @@ class Notifier
     options.message = message.text;
     options.title = @topics[@selectedTopic] unless @selectedTopic is "0"
 
-    if message.time?
-      options.title = "[" + message.time + "] " + options.title
+    if message.timePretty?
+      options.title = "[" + message.timePretty + "] " + options.title
 
     if message.thumbnail?
       options.type = "image"
