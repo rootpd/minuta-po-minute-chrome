@@ -3,7 +3,7 @@ function initSnoozeTimer() {
     var timerValue = document.getElementById("snooze-timer-value");
 
     chrome.storage.sync.get("snooze", function(val) {
-        if (typeof val['snooze'] == 'undefined' || val['snooze'] == 'off' || val['snooze'] <= (new Date()).getTime) {
+        if (typeof val['snooze'] == 'undefined' || val['snooze'] == 'off' || val['snooze'] <= (new Date()).getTime()) {
             timer.style.display = 'none';
             return;
         }

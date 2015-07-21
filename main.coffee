@@ -136,6 +136,7 @@ class Notifier
 
   DEFAULT_LOCAL_SETTINGS:
     "selectedTopic": "0"
+    "topics": {}
 
   DEFAULT_NOTIFICATION_OPTIONS:
     type : "basic"
@@ -147,7 +148,7 @@ class Notifier
   currentSettings: {}
   downloader: null
   parser: null
-  topics: []
+  topics: {}
   selectedTopic: "0"
 
   constructor: (@downloader, @parser) ->
@@ -164,11 +165,13 @@ class Notifier
 
   downloadMessages: (downloader, parser, silently) =>
     if not silently
-      silently = @currentSettings['snooze'] != 'off' and (new Date(@currentSettings['snooze'])).getTime() > (new Date()).getTime()
+      silently = @currentSettings['snooze'] != 'off' and @currentSettings['snooze'] > (new Date()).getTime()
 
     minutesInterval =
       if @currentSettings['interval']? and parseInt(@currentSettings['interval']) >= 1
       then parseInt(@currentSettings['interval']) else 1
+
+    chrome.storage.local.remove("stickyTopicMessage");
 
     downloader.xhrDownload "text", downloader.URI + @selectedTopic, (event) =>
       rawMessages = downloader.getMessages event.target.response;
@@ -222,6 +225,7 @@ class Notifier
         
       chrome.storage.local.get @DEFAULT_LOCAL_SETTINGS, (wal) =>
         @selectedTopic = wal['selectedTopic']
+        @topics = wal['topics']
         callback() if callback?
 
 
@@ -247,7 +251,7 @@ class Notifier
       return false;
 
     options.message = message.text;
-    options.title = @selectedTopic
+    options.title = @topics[@selectedTopic] unless @selectedTopic is "0"
 
     if message.time?
       options.title = "[" + message.time + "] " + options.title

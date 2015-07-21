@@ -213,7 +213,8 @@
     };
 
     Notifier.prototype.DEFAULT_LOCAL_SETTINGS = {
-      "selectedTopic": "0"
+      "selectedTopic": "0",
+      "topics": {}
     };
 
     Notifier.prototype.DEFAULT_NOTIFICATION_OPTIONS = {
@@ -231,7 +232,7 @@
 
     Notifier.prototype.parser = null;
 
-    Notifier.prototype.topics = [];
+    Notifier.prototype.topics = {};
 
     Notifier.prototype.selectedTopic = "0";
 
@@ -265,9 +266,10 @@
     Notifier.prototype.downloadMessages = function(downloader, parser, silently) {
       var minutesInterval;
       if (!silently) {
-        silently = this.currentSettings['snooze'] !== 'off' && (new Date(this.currentSettings['snooze'])).getTime() > (new Date()).getTime();
+        silently = this.currentSettings['snooze'] !== 'off' && this.currentSettings['snooze'] > (new Date()).getTime();
       }
       minutesInterval = (this.currentSettings['interval'] != null) && parseInt(this.currentSettings['interval']) >= 1 ? parseInt(this.currentSettings['interval']) : 1;
+      chrome.storage.local.remove("stickyTopicMessage");
       return downloader.xhrDownload("text", downloader.URI + this.selectedTopic, (function(_this) {
         return function(event) {
           var i, len, message, messages, rawMessage, rawMessages, storage;
@@ -334,6 +336,7 @@
           }
           return chrome.storage.local.get(_this.DEFAULT_LOCAL_SETTINGS, function(wal) {
             _this.selectedTopic = wal['selectedTopic'];
+            _this.topics = wal['topics'];
             if (callback != null) {
               return callback();
             }
@@ -371,7 +374,9 @@
         return false;
       }
       options.message = message.text;
-      options.title = this.selectedTopic;
+      if (this.selectedTopic !== "0") {
+        options.title = this.topics[this.selectedTopic];
+      }
       if (message.time != null) {
         options.title = "[" + message.time + "] " + options.title;
       }
