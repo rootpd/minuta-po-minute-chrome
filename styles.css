@@ -8,10 +8,16 @@ html {
     height: auto;
 }
 
-body {
+body.options {
     font-family: 'Open Sans', sans-serif;
     font-size: 10pt;
     width: 630px;
+}
+body.popup {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 10pt;
+    padding: 0 10px;
+    width: 300px;
 }
 
 button {
@@ -26,7 +32,13 @@ button {
     background: none !important;
 }
 
-.a-minute {
+#sticky-topic-message {
+    font-size: 12px;
+    margin-top: 10px;
+    display: none;
+}
+
+.a-minute, .a-minute select {
     font-family: 'Open Sans', sans-serif;
 }
 .a-minute.checkbox label {
@@ -61,6 +73,12 @@ input.focus, select.focus {
 .a-minute {
     padding: 10px 0;
 }
+.a-minute.compact {
+    padding: 3px 10px 9px;
+    background-color: #fff0b2;
+    width: 110%;
+    margin-left: -10px;
+}
 
 .i {
     font: normal normal normal 16px/1 icons;
@@ -92,4 +110,28 @@ input.focus, select.focus {
     position: absolute;
     top: 0;
     right: 175px;
+}
+
+body.popup select {
+    width: 155px;
+    display: inline-block;
+}
+body.popup .e-button {
+    color: #b00c28;
+    width: auto;
+    height: auto;
+    padding: 6px;
+    line-height: initial;
+    margin: 0 0 0 3px;
+    display: inline-block;
+}
+body.popup .e-button.compact {
+    padding: 2px 4px;
+    font-size: 13px;
+}
+.minutatopic {
+    margin-right: 3px;
+}
+.e-headerbox {
+    padding: 5px;
 }
