@@ -75,7 +75,10 @@ class MinutaAjaxMessageParser
 
   getHtmlExcerpt: ->
     matches = @messageBody.match(@MESSAGE_EXCERPT_REGEX);
-    return matches[0] if matches?
+    for match in matches
+      return match if match.length > 15
+
+    return null
 
   getHtml: ->
     matches = @MESSAGE_REGEX.exec @messageBody
@@ -212,7 +215,7 @@ class Notifier
               "targetUrl": message.targetUrl
               "excerpt": message.excerpt
               "timePretty": message.timePretty
-            }
+            } if message.excerpt.length > 10
           else
             do (message) =>
               setTimeout =>

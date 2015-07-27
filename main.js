@@ -111,11 +111,15 @@
     };
 
     MinutaAjaxMessageParser.prototype.getHtmlExcerpt = function() {
-      var matches;
+      var i, len, match, matches;
       matches = this.messageBody.match(this.MESSAGE_EXCERPT_REGEX);
-      if (matches != null) {
-        return matches[0];
+      for (i = 0, len = matches.length; i < len; i++) {
+        match = matches[i];
+        if (match.length > 15) {
+          return match;
+        }
       }
+      return null;
     };
 
     MinutaAjaxMessageParser.prototype.getHtml = function() {
@@ -314,12 +318,14 @@
                 continue;
               }
               if (silently || (_this.currentSettings['importantOnly'] && message.priority !== parser.PRIORITY_IMPORTANT)) {
-                storage[message.id] = {
-                  "skipped": true,
-                  "targetUrl": message.targetUrl,
-                  "excerpt": message.excerpt,
-                  "timePretty": message.timePretty
-                };
+                if (message.excerpt.length > 10) {
+                  storage[message.id] = {
+                    "skipped": true,
+                    "targetUrl": message.targetUrl,
+                    "excerpt": message.excerpt,
+                    "timePretty": message.timePretty
+                  };
+                }
               } else {
                 (function(message) {
                   return setTimeout(function() {
