@@ -256,6 +256,7 @@
       this.updateTopics = bind(this.updateTopics, this);
       this.reloadSettings = bind(this.reloadSettings, this);
       this.downloadMessages = bind(this.downloadMessages, this);
+      chrome.storage.local.clear();
       chrome.notifications.onClosed.addListener(this.notificationClosed);
       chrome.notifications.onClicked.addListener(this.notificationClicked);
       chrome.notifications.onButtonClicked.addListener(this.notificationBtnClick);

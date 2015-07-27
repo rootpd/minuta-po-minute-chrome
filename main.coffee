@@ -157,6 +157,8 @@ class Notifier
   selectedTopic: "0"
 
   constructor: (@downloader, @parser) ->
+    chrome.storage.local.clear()
+    
     chrome.notifications.onClosed.addListener @notificationClosed;
     chrome.notifications.onClicked.addListener @notificationClicked;
     chrome.notifications.onButtonClicked.addListener @notificationBtnClick;
