@@ -26,7 +26,7 @@ button {
 }
 
 #save {
-    margin-top: 8px;
+    margin-top: 4px;
     box-shadow: none !important;
     border-color: #80091D !important;
     background: none !important;
@@ -110,6 +110,10 @@ input.focus, select.focus {
     position: absolute;
     top: 0;
     right: 175px;
+}
+
+body .e-button {
+    font-family: 'Open Sans', sans-serif;;
 }
 
 body.popup select {

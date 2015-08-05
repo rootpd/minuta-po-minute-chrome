@@ -78,6 +78,8 @@ function initTopicSelector() {
                 continue;
             }
 
+            document.getElementById("no-topics-available").style.display = "none";
+
             var a = document.createElement('a');
             a.textContent = val['topics'][key];
             a.classList.add('minutapominuteodkaz');

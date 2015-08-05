@@ -211,6 +211,8 @@
   })();
 
   Notifier = (function() {
+    Notifier.prototype.NO_TOPIC = "0";
+
     Notifier.prototype.LOGO = "/images/icon512.png";
 
     Notifier.prototype.BUTTONS = [chrome.i18n.getMessage("readMoreButton")];
@@ -257,9 +259,12 @@
       this.notificationClicked = bind(this.notificationClicked, this);
       this.notificationClosed = bind(this.notificationClosed, this);
       this.creationCallback = bind(this.creationCallback, this);
+      this.notifyArticle = bind(this.notifyArticle, this);
       this.updateTopics = bind(this.updateTopics, this);
+      this.resetTopics = bind(this.resetTopics, this);
       this.reloadSettings = bind(this.reloadSettings, this);
       this.downloadMessages = bind(this.downloadMessages, this);
+      this.run = bind(this.run, this);
       chrome.storage.local.clear();
       chrome.notifications.onClosed.addListener(this.notificationClosed);
       chrome.notifications.onClicked.addListener(this.notificationClicked);
@@ -284,6 +289,9 @@
       }
       minutesInterval = (this.currentSettings['interval'] != null) && parseInt(this.currentSettings['interval']) >= 1 ? parseInt(this.currentSettings['interval']) : 1;
       chrome.storage.local.remove("stickyTopicMessage");
+      if (this.selectedTopic === this.NO_TOPIC) {
+        this.resetTopics();
+      }
       return downloader.xhrDownload("text", downloader.URI + this.selectedTopic, (function(_this) {
         return function(event) {
           var i, len, message, messages, rawMessage, rawMessages, storage;
@@ -297,7 +305,7 @@
             }
             message = parser.parse(rawMessage);
             if (message.priority === parser.PRIORITY_STICKY) {
-              if (_this.selectedTopic === "0") {
+              if (_this.selectedTopic === _this.NO_TOPIC) {
                 _this.updateTopics(message);
               } else {
                 _this.updateStickyTopicMessage(message);
@@ -366,6 +374,11 @@
       })(this));
     };
 
+    Notifier.prototype.resetTopics = function() {
+      chrome.storage.local.remove("topics");
+      return this.topics = {};
+    };
+
     Notifier.prototype.updateTopics = function(message) {
       if (Object.keys(this.topics).toString() !== Object.keys(message.topics).toString()) {
         return chrome.storage.local.set({
@@ -398,7 +411,7 @@
         return false;
       }
       options.message = message.text;
-      if (this.selectedTopic !== "0") {
+      if (this.selectedTopic !== this.NO_TOPIC) {
         options.title = this.topics[this.selectedTopic];
       }
       if (message.timePretty != null) {

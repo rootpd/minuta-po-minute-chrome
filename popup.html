@@ -13,8 +13,9 @@
 <body class="popup">
 
 <div class="a-minute compact" id="topic-selector">
-    <div>Filtrovať správy podľa témy</div>
+    <div>Filtrovať správy podľa témy:</div>
     <span class="e-button red i compact" id="unbind-topic" style="display: none">x</span>
+    <div id="no-topics-available"><em><small>Momentálne nie sú dostupné žiadne témy...</small></em></div>
     <div id="sticky-topic-message"></div>
 </div>
 
@@ -26,7 +27,7 @@
     </div>
 
     <div id="snooze-setting">
-        <label for="snooze">Pozastaviť notifikácie</label>
+        <label for="snooze">Pozastaviť notifikácie:</label>
         <select id="snooze" name="snooze">
             <option value="30" selected>30 minút</option>
             <option value="60">1 hodina</option>
@@ -43,7 +44,7 @@
 
 <footer class="s s-footer">
     <nav class="footer">
-        <a href="https://dennikn.sk/">Copyright © N Press, s. r. o.</a>
+        <a target="_blank" href="https://dennikn.sk/">Copyright © N Press, s. r. o.</a>
     </nav>
 </footer>
 

@@ -128,6 +128,7 @@ class Minuta
   constructor: (@thumbnail, @time, @message, @id, @targetUrl, @priority) ->
 
 class Notifier
+  NO_TOPIC: "0"
   LOGO: "/images/icon512.png"
   BUTTONS: [
     chrome.i18n.getMessage("readMoreButton")
@@ -166,7 +167,7 @@ class Notifier
     chrome.notifications.onClicked.addListener @notificationClicked;
     chrome.notifications.onButtonClicked.addListener @notificationBtnClick;
 
-  run: (forceSilent) ->
+  run: (forceSilent) =>
     downloader = new @downloader();
     parser = new @parser();
 
@@ -182,6 +183,7 @@ class Notifier
       then parseInt(@currentSettings['interval']) else 1
 
     chrome.storage.local.remove("stickyTopicMessage");
+    @resetTopics() if @selectedTopic == @NO_TOPIC
 
     downloader.xhrDownload "text", downloader.URI + @selectedTopic, (event) =>
       rawMessages = downloader.getMessages event.target.response;
@@ -194,7 +196,7 @@ class Notifier
         message = parser.parse rawMessage
 
         if message.priority is parser.PRIORITY_STICKY
-          if @selectedTopic == "0"
+          if @selectedTopic == @NO_TOPIC
             @updateTopics message
           else
             @updateStickyTopicMessage message
@@ -244,6 +246,9 @@ class Notifier
         @topics = wal['topics']
         callback() if callback?
 
+  resetTopics: =>
+    chrome.storage.local.remove "topics"
+    @topics = {}
 
   updateTopics: (message) =>
     if Object.keys(@topics).toString() != Object.keys(message.topics).toString()
@@ -257,7 +262,7 @@ class Notifier
       "stickyTopicMessage": message.html
     }
 
-  notifyArticle: (message) ->
+  notifyArticle: (message) =>
     options = JSON.parse(JSON.stringify(@DEFAULT_NOTIFICATION_OPTIONS));
     meta =
       "targetUrl": message.targetUrl
@@ -270,7 +275,7 @@ class Notifier
       return false;
 
     options.message = message.text;
-    options.title = @topics[@selectedTopic] unless @selectedTopic is "0"
+    options.title = @topics[@selectedTopic] unless @selectedTopic is @NO_TOPIC
 
     if message.timePretty?
       options.title = "[" + message.timePretty + "] " + options.title
