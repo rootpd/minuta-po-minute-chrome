@@ -165,7 +165,7 @@
       topics = {};
       topic = this.TOPIC_REGEX.exec(this.messageBody);
       while ((topic != null) && topic.length > 2) {
-        topics[topic[1]] = topic[2];
+        topics[topic[1]] = this.decodeHtml(topic[2]);
         topic = this.TOPIC_REGEX.exec(this.messageBody);
       }
       return topics;

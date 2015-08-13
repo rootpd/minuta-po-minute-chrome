@@ -106,7 +106,7 @@ class MinutaAjaxMessageParser
     topic = @TOPIC_REGEX.exec @messageBody
 
     while topic? && topic.length > 2
-      topics[topic[1]] = topic[2]
+      topics[topic[1]] = @decodeHtml topic[2]
       topic = @TOPIC_REGEX.exec @messageBody
 
     return topics
