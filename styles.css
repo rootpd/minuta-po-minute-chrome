@@ -139,3 +139,10 @@ body.popup .e-button.compact {
 .e-headerbox {
     padding: 5px;
 }
+.s-footer {
+    margin: 4px 0;
+    text-align: center;
+    background: none;
+    border-top: 2px solid #B00C28;
+    color: #3b3b3b;
+}

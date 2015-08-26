@@ -113,6 +113,9 @@
     MinutaAjaxMessageParser.prototype.getHtmlExcerpt = function() {
       var i, len, match, matches;
       matches = this.messageBody.match(this.MESSAGE_EXCERPT_REGEX);
+      if (matches == null) {
+        return null;
+      }
       for (i = 0, len = matches.length; i < len; i++) {
         match = matches[i];
         if (match.length > 15) {

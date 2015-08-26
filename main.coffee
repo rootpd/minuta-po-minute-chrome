@@ -75,6 +75,8 @@ class MinutaAjaxMessageParser
 
   getHtmlExcerpt: ->
     matches = @messageBody.match(@MESSAGE_EXCERPT_REGEX);
+    return null unless matches?
+
     for match in matches
       return match if match.length > 15
 
