@@ -354,6 +354,11 @@
             return setTimeout(_this.run.bind(_this, false), 60000 * minutesInterval);
           });
         };
+      })(this), (function(_this) {
+        return function(event) {
+          console.log("recovering from network error...");
+          return setTimeout(_this.run.bind(_this, false), 60000 * minutesInterval);
+        };
       })(this));
     };
 
@@ -476,7 +481,8 @@
     Notifier.prototype.openMessage = function(notID) {
       return chrome.storage.local.get(notID, function(val) {
         var targetUrl;
-        targetUrl = val[notID].targetUrl;
+        targetUrl = val[notID].targetUrl + "?ref=ext";
+        console.log(targetUrl);
         return chrome.tabs.create({
           url: targetUrl
         });

@@ -233,6 +233,9 @@ class Notifier
           chrome.storage.local.set storage
 
         setTimeout @run.bind(this, false), 60000 * minutesInterval
+    , (event) =>
+      console.log "recovering from network error..."
+      setTimeout @run.bind(this, false), 60000 * minutesInterval
 
   reloadSettings: (callback) =>
     chrome.storage.sync.get @DEFAULT_SYNC_SETTINGS, (val) =>
@@ -327,14 +330,13 @@ class Notifier
 
 
   notificationBtnClick: (notID) =>
-    @openMessage(notID)
+    @openMessage notID
 
 
   openMessage: (notID) =>
-    #noinspection JSUnresolvedVariable
-    #noinspection JSUnresolvedVariable
     chrome.storage.local.get notID, (val) ->
-      targetUrl = val[notID].targetUrl;
+      targetUrl = val[notID].targetUrl + "?ref=ext";
+      console.log targetUrl
       chrome.tabs.create {url: targetUrl}
 
 
@@ -344,3 +346,6 @@ class Notifier
 
 notifier = new Notifier(MinutaAjaxDownloader, MinutaAjaxMessageParser)
 notifier.run true
+
+#chrome.webRequest.onErrorOccurred.addListener (details) ->
+#  console.log details

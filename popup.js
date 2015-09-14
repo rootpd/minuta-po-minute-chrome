@@ -164,7 +164,7 @@ function initLatestMessages() {
                 }
 
                 var article = document.createElement('article');
-                var title = '<h3 class="title"><a href="' + wal[id]['targetUrl'] + '"><time class="d-posted">' + wal[id]['timePretty'] + '</time></a></h3>';
+                var title = '<h3 class="title"><a href="' + wal[id]['targetUrl'] + "?ref=ext" + '"><time class="d-posted">' + wal[id]['timePretty'] + '</time></a></h3>';
 
                 article.innerHTML = title + ' ' + wal[id]['excerpt'];
                 article.classList.add('a-minute');
