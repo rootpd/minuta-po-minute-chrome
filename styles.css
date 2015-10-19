@@ -1,3 +1,7 @@
+@font-face {
+    font-family:local-icons;src:url(https://dennikn.sk/wp-content/themes/dnwp/icons.3.eot);src:url(https://dennikn.sk/wp-content/themes/dnwp/icons.3.eot?#iefix) format('eot'),url(https://dennikn.sk/wp-content/themes/dnwp/icons.3.woff) format('woff'),url(https://dennikn.sk/wp-content/themes/dnwp/icons.3.ttf) format('truetype'),url(https://dennikn.sk/wp-content/themes/dnwp/icons.3.svg#icons) format('svg');font-weight:400;font-style:normal
+}
+
 #settings {
     padding: 10px;
     border: 1px solid silver;
@@ -38,16 +42,16 @@ button {
     display: none;
 }
 
-.a-minute, .a-minute select {
+.a_minute, .a_minute select {
     font-family: 'Open Sans', sans-serif;
 }
-.a-minute.checkbox label {
+.a_minute.checkbox label {
     display: inline-block;
     margin-left: 5px;
     vertical-align: middle;
     padding: 0;
 }
-.a-minute.checkbox input {
+.a_minute.checkbox input {
     display: inline-block;
 }
 
@@ -70,10 +74,10 @@ input.focus, select.focus {
     border-bottom: solid 2px #80091d !important;
 }
 
-.a-minute {
+.a_minute {
     padding: 10px 0;
 }
-.a-minute.compact {
+.a_minute.compact {
     padding: 3px 10px 9px;
     background-color: #fff0b2;
     width: 110%;
@@ -88,31 +92,33 @@ input.focus, select.focus {
     text-transform: none;
     vertical-align: baseline;
 }
-.i-check:before {
+.i_check:before {
     content: ''
 }
-.i-check:after {
+.i_check:after {
     content: '\E005'
 }
 .s-container {
     width: 630px;
 }
-.s-header .login {
-    width: 543px;
+.s_header .login {
+    width: 156px;
+    text-transform: uppercase;
+    padding-top: 14px;
 }
-.s-header .logo {
+.s_header .logo {
     background: #B00C28;
 }
-.s-header .logo a {
+.s_header .logo a {
     padding: 0 10px 0 10px;
 }
-.s-header #minuta-logo {
+.s_header #minuta-logo {
     position: absolute;
     top: 0;
     right: 175px;
 }
 
-body .e-button {
+body .e_button {
     font-family: 'Open Sans', sans-serif;;
 }
 
@@ -120,7 +126,7 @@ body.popup select {
     width: 155px;
     display: inline-block;
 }
-body.popup .e-button {
+body.popup .e_button {
     color: #b00c28;
     width: auto;
     height: auto;
@@ -129,7 +135,7 @@ body.popup .e-button {
     margin: 0 0 0 3px;
     display: inline-block;
 }
-body.popup .e-button.compact {
+body.popup .e_button.compact {
     padding: 2px 4px;
     font-size: 13px;
 }
@@ -139,7 +145,7 @@ body.popup .e-button.compact {
 .e-headerbox {
     padding: 5px;
 }
-.s-footer {
+.s_footer {
     margin: 4px 0;
     text-align: center;
     background: none;

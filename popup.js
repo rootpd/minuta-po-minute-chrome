@@ -167,7 +167,7 @@ function initLatestMessages() {
                 var title = '<h3 class="title"><a href="' + wal[id]['targetUrl'] + "?ref=ext" + '"><time class="d-posted">' + wal[id]['timePretty'] + '</time></a></h3>';
 
                 article.innerHTML = title + ' ' + wal[id]['excerpt'];
-                article.classList.add('a-minute');
+                article.classList.add('a_minute');
                 article.id = "mpm-" + id;
 
                 latestMessages.appendChild(article);

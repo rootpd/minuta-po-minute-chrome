@@ -15,10 +15,11 @@ function saveOptions() {
         "notificationClick": notificationClick
     }, function() {
         var submit = document.getElementById('save');
-        submit.classList.add('i-check');
+        var oldText = submit.innerHTML;
+        submit.innerHTML = 'OK...';
 
         setTimeout(function() {
-            submit.classList.remove('i-check');
+            submit.innerHTML = oldText;
         }, 1200);
     });
 }
