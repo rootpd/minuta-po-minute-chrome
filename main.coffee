@@ -1,5 +1,5 @@
 class MinutaAjaxDownloader
-  URI: "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag="
+  URI: "https://dennikn.sk/api/minuta?tag="
   ARTICLE_REGEX: /(<article[\s\S]*?<\/article>)/ig
 
   xhrDownload: (responseType, URI, successCallback, errorCallback) ->
@@ -12,28 +12,20 @@ class MinutaAjaxDownloader
     xhr.send(null)
 
   getMessages: (response) =>
-    response.match(@ARTICLE_REGEX)
+    JSON.parse(response)
 
 
 class MinutaAjaxMessageParser
-  TARGET_URL_REGEX: /https?:\/\/dennikn.sk\/minuta\/(\d+)/
-  TIME_REGEX: /(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)/
-  MESSAGE_REGEX: /<article.*?>(.*?)<\/article>/g
-  MESSAGE_EXCERPT_REGEX: /<p>(.*?)<\/p>/gi
   HTML_REGEX: /(<([^>]+)>)/ig
-  IMAGE_REGEX: /<img.*?src="(.*?)"/
-  ARTICLE_ID_REGEX: /article id="mpm-(\d+)"/
-  PRIORITY_REGEX: /article.*?class="([^>]*?)"/
   YOUTUBE_REGEX: /youtube\.com\/embed\/(.*?)[\/\?]/
-  TOPIC_REGEX: /"#tema=(.*?)".*?>(.*?)</g
 
   PRIORITY_STICKY: "sticky"
   PRIORITY_IMPORTANT: "important"
 
-  messageBody: null
+  message: null
 
-  parse: (messageBody) ->
-    @messageBody = messageBody.replace /\s+/g," "
+  parse: (message) ->
+    @message = message
 
     return {
       thumbnail: @getFigure()
@@ -48,70 +40,54 @@ class MinutaAjaxMessageParser
     }
 
   getFigure: =>
-    matches = @messageBody.match(@IMAGE_REGEX)
+    return @message['image']['large'] if @message['image']? and @message['image']['large']?
 
-    if matches != null && matches.length == 2
-      return matches[1]
-
-    matches = @messageBody.match(@YOUTUBE_REGEX)
-    if matches? and matches.length == 2
-      return "http://img.youtube.com/vi/" + matches[1] + "/mqdefault.jpg"
+    if @message['embed']?
+      matches = @message['embed']['html'].match(@YOUTUBE_REGEX)
+      if matches? and matches.length == 2
+        return "http://img.youtube.com/vi/" + matches[1] + "/mqdefault.jpg"
 
   getTimePretty: =>
-    matches = @messageBody.match(@TIME_REGEX);
-
-    if matches? && matches.length == 7
-
-      #NOTE: Switch to this implementation if N starts using proper timezone
-      #date = new Date(matches[0]);
-      #return date.getHours() + ":" + date.getMinutes();
-      return ("0" + matches[4]).slice(-2) + ":" + ("0" + matches[5]).slice(-2);
+      date = new Date(@message['created']);
+      return date.toLocaleTimeString();
 
   getText: ->
-    matches = @messageBody.match(@MESSAGE_EXCERPT_REGEX);
-    if (matches? && matches.length > 0)
-      value = matches[0].replace(@HTML_REGEX, "")
-      return @decodeHtml(value)
+    value = @message['content']['main'].replace(@HTML_REGEX, "")
+    return @decodeHtml(value)
 
   getHtmlExcerpt: ->
-    matches = @messageBody.match(@MESSAGE_EXCERPT_REGEX);
-    return null unless matches?
-
-    for match in matches
-      return match if match.length > 15
-
-    return null
+    @message['content']['main']
 
   getHtml: ->
-    matches = @MESSAGE_REGEX.exec @messageBody
-    return matches[1] if matches?
+    if @message['content']['extended']?
+      html = @message['content']['extended']
+    else
+      html = @message['content']['main']
+
+    figure = @getFigure()
+    if figure?
+      html += "<p><img src='" + figure + "' /></p>"
+
+    return html
 
   getId: =>
-    matches = @messageBody.match(@ARTICLE_ID_REGEX);
-    return matches[1] if matches?
+    @message['id']
 
   getTargetUrl: =>
-    matches = @messageBody.match(@TARGET_URL_REGEX);
-    if (matches? && matches.length == 2)
-      return matches[0]
+    @message['url']
 
   getPriority: =>
-    matches = @messageBody.match(@PRIORITY_REGEX);
-    if (matches? && matches.length == 2)
-      classes = matches[1];
-
-      return @PRIORITY_IMPORTANT if classes.indexOf("important") != -1
-      return @PRIORITY_STICKY if classes.indexOf("sticky") != -1
+    return @PRIORITY_IMPORTANT if @message['important']? and @message['important'] == true
+    return @PRIORITY_STICKY if @message['sticky']? and @message['sticky'] == true
 
   getTopics: =>
     topics = {}
-    topic = @TOPIC_REGEX.exec @messageBody
+    return topics unless @message['tags']
 
-    while topic? && topic.length > 2
-      topics[topic[1]] = @decodeHtml topic[2]
-      topic = @TOPIC_REGEX.exec @messageBody
+    for tag in @message['tags']
+      topics[tag['slug']] = tag['name']
 
-    return topics
+    topics
 
   decodeHtml: (html) ->
     txt = document.createElement "textarea"
@@ -146,7 +122,7 @@ class Notifier
     "snooze": "off"
 
   DEFAULT_LOCAL_SETTINGS:
-    "selectedTopic": "0"
+    "selectedTopic": ""
     "topics": {}
 
   DEFAULT_NOTIFICATION_OPTIONS:
@@ -218,6 +194,7 @@ class Notifier
               "skipped": true
               "targetUrl": message.targetUrl
               "excerpt": message.excerpt
+              "html": message.html
               "timePretty": message.timePretty
             } if message.excerpt.length > 10
           else
@@ -272,6 +249,7 @@ class Notifier
     meta =
       "targetUrl": message.targetUrl
       "excerpt": message.excerpt
+      "html": message.html
       "skipped": false
       "timePretty": message.timePretty
 
