@@ -25,7 +25,7 @@ class MinutaAjaxMessageParser
   ARTICLE_ID_REGEX: /article id="mpm-(\d+)"/
   PRIORITY_REGEX: /article.*?class="([^>]*?)"/
   YOUTUBE_REGEX: /youtube\.com\/embed\/(.*?)[\/\?]/
-  TOPIC_REGEX: /"#tema=(.*?)".*?>(.*?)</g
+  TOPIC_REGEX: /<a href="https:\/\/dennikn.sk\/tema\/(.*?)\/" class="d-tag">(.*?)<\/a>/g
 
   PRIORITY_STICKY: "sticky"
   PRIORITY_IMPORTANT: "important"
@@ -139,7 +139,7 @@ class Notifier
   DEFAULT_SYNC_SETTINGS:
     "sound": "no-sound"
     "interval": 5
-    "messageCount": 3
+    "messageCount": 10
     "importantOnly": false
     "displayTime": 10
     "notificationClick": "open"
@@ -191,21 +191,24 @@ class Notifier
       rawMessages = downloader.getMessages event.target.response;
       storage = {}
       messages = {}
+      topics = {}
 
       for rawMessage in rawMessages
         break if Object.keys(messages).length == parseInt(@currentSettings['messageCount'])
 
         message = parser.parse rawMessage
+        for own key, value of message.topics
+          topics[key] = value
 
         if message.priority is parser.PRIORITY_STICKY
-          if @selectedTopic == @NO_TOPIC
-            @updateTopics message
-          else
+          if @selectedTopic != @NO_TOPIC
             @updateStickyTopicMessage message
 
           continue
 
         messages[message.id] = message
+
+      @updateTopics topics
 
       chrome.storage.local.set {"latestMessageIds": Object.keys(messages)}
       chrome.storage.local.get Object.keys(messages), (alreadyNotifiedMessages) =>
@@ -255,12 +258,12 @@ class Notifier
     chrome.storage.local.remove "topics"
     @topics = {}
 
-  updateTopics: (message) =>
-    if Object.keys(@topics).toString() != Object.keys(message.topics).toString()
+  updateTopics: (topics) =>
+    if Object.keys(@topics).toString() != Object.keys(topics).toString()
       chrome.storage.local.set {
-        "topics": message.topics
+        "topics": topics
       }, =>
-        @topics = message.topics
+        @topics = topics
 
   updateStickyTopicMessage: (message) ->
     chrome.storage.local.set {

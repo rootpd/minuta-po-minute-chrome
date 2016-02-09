@@ -82,9 +82,7 @@ function initTopicSelector() {
 
             var a = document.createElement('a');
             a.textContent = val['topics'][key];
-            a.classList.add('minutapominuteodkaz');
-            a.classList.add('minutapominutefilter');
-            a.classList.add('minutatopic');
+            a.classList.add('d-tag');
             a.addEventListener("click", setTopicFilter);
             a.href = "#tema=" + val['topics'][key];
             a.id = key;
@@ -108,7 +106,7 @@ function setTopicFilter(evt) {
 
 function setTopicFilterCallback(selectedElementId) {
     var srcElement = document.getElementById(selectedElementId);
-    var topics = document.getElementsByClassName("minutatopic");
+    var topics = document.getElementsByClassName("d-tag");
 
     for (var i=0; i < topics.length; i++) {
         topics[i].style.display = 'none';
@@ -135,7 +133,7 @@ function removeTopicFilter() {
     document.getElementById("unbind-topic").style.display = 'none';
     document.getElementById("sticky-topic-message").style.display = 'none';
 
-    var topics = document.getElementsByClassName("minutatopic");
+    var topics = document.getElementsByClassName("d-tag");
     for (var i=0; i < topics.length; i++) {
         topics[i].style.display = 'inline-block';
     }

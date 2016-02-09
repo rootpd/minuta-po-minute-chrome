@@ -41,6 +41,9 @@ button {
     margin-top: 10px;
     display: none;
 }
+#unbind-topic {
+    cursor: pointer;
+}
 
 .a_minute, .a_minute select {
     font-family: 'Open Sans', sans-serif;
@@ -53,6 +56,9 @@ button {
 }
 .a_minute.checkbox input {
     display: inline-block;
+}
+.a_minute .title {
+    display: inline;
 }
 
 input, select {
