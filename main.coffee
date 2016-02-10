@@ -194,8 +194,6 @@ class Notifier
       topics = {}
 
       for rawMessage in rawMessages
-        break if Object.keys(messages).length == parseInt(@currentSettings['messageCount'])
-
         message = parser.parse rawMessage
         for own key, value of message.topics
           topics[key] = value
@@ -206,9 +204,11 @@ class Notifier
 
           continue
 
-        messages[message.id] = message
+        if Object.keys(messages).length < parseInt(@currentSettings['messageCount'])
+          messages[message.id] = message
 
-      @updateTopics topics
+      if @selectedTopic == @NO_TOPIC
+        @updateTopics topics
 
       chrome.storage.local.set {"latestMessageIds": Object.keys(messages)}
       chrome.storage.local.get Object.keys(messages), (alreadyNotifiedMessages) =>

@@ -305,9 +305,6 @@
           topics = {};
           for (i = 0, len = rawMessages.length; i < len; i++) {
             rawMessage = rawMessages[i];
-            if (Object.keys(messages).length === parseInt(_this.currentSettings['messageCount'])) {
-              break;
-            }
             message = parser.parse(rawMessage);
             ref = message.topics;
             for (key in ref) {
@@ -321,9 +318,13 @@
               }
               continue;
             }
-            messages[message.id] = message;
+            if (Object.keys(messages).length < parseInt(_this.currentSettings['messageCount'])) {
+              messages[message.id] = message;
+            }
           }
-          _this.updateTopics(topics);
+          if (_this.selectedTopic === _this.NO_TOPIC) {
+            _this.updateTopics(topics);
+          }
           chrome.storage.local.set({
             "latestMessageIds": Object.keys(messages)
           });
