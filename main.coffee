@@ -284,8 +284,11 @@ class Notifier
       console.warn("Could not parse the message from the source, skipping...");
       return false;
 
-    options.message = message.text;
-    options.title = message.topics[Object.keys(message.topics)[0]] if Object.keys(message.topics).length == 1
+    options.message = message.text
+    if Object.keys(message.topics).length == 1
+      options.title = message.topics[Object.keys(message.topics)[0]]
+    else if @selectedTopic != @NO_TOPIC && @topics[@selectedTopic]?
+      options.title = @topics[@selectedTopic]
 
     if message.timePretty?
       options.title = "[" + message.timePretty + "] " + options.title

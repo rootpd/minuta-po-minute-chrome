@@ -431,6 +431,8 @@
       options.message = message.text;
       if (Object.keys(message.topics).length === 1) {
         options.title = message.topics[Object.keys(message.topics)[0]];
+      } else if (this.selectedTopic !== this.NO_TOPIC && (this.topics[this.selectedTopic] != null)) {
+        options.title = this.topics[this.selectedTopic];
       }
       if (message.timePretty != null) {
         options.title = "[" + message.timePretty + "] " + options.title;
