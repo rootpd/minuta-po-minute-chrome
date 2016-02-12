@@ -164,7 +164,15 @@ function initLatestMessages() {
                 var article = document.createElement('article');
                 var title = '<h3 class="title"><a href="' + wal[id]['targetUrl'] + "?ref=ext" + '"><time class="d-posted">' + wal[id]['timePretty'] + '</time></a></h3>';
 
-                article.innerHTML = title + ' ' + wal[id]['excerpt'];
+                var topics = "";
+                for (var tag in wal[id]['topics']) {
+                    if (wal[id]['topics'].hasOwnProperty(tag)) {
+                        topics += '<a href="https://dennikn.sk/tema/' + tag + '/?ref=mpm" class="d-tag">' + wal[id]['topics'][tag] + '</a>';
+                    }
+                }
+                topics = '<nav class="e_tags">'+topics+'</nav>';
+
+                article.innerHTML = title + ' ' + wal[id]['excerpt'] + topics;
                 article.classList.add('a_minute');
                 article.id = "mpm-" + id;
 

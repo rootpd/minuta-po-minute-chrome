@@ -342,7 +342,8 @@
                     "skipped": true,
                     "targetUrl": message.targetUrl,
                     "excerpt": message.excerpt,
-                    "timePretty": message.timePretty
+                    "timePretty": message.timePretty,
+                    "topics": message.topics
                   };
                 }
               } else {
@@ -420,15 +421,16 @@
         "targetUrl": message.targetUrl,
         "excerpt": message.excerpt,
         "skipped": false,
-        "timePretty": message.timePretty
+        "timePretty": message.timePretty,
+        "topics": message.topics
       };
       if (!((message.id != null) && (message.text != null))) {
         console.warn("Could not parse the message from the source, skipping...");
         return false;
       }
       options.message = message.text;
-      if (this.selectedTopic !== this.NO_TOPIC) {
-        options.title = this.topics[this.selectedTopic];
+      if (Object.keys(message.topics).length === 1) {
+        options.title = message.topics[Object.keys(message.topics)[0]];
       }
       if (message.timePretty != null) {
         options.title = "[" + message.timePretty + "] " + options.title;

@@ -222,6 +222,7 @@ class Notifier
               "targetUrl": message.targetUrl
               "excerpt": message.excerpt
               "timePretty": message.timePretty
+              "topics": message.topics
             } if message.excerpt.length > 10
           else
             do (message) =>
@@ -277,13 +278,14 @@ class Notifier
       "excerpt": message.excerpt
       "skipped": false
       "timePretty": message.timePretty
+      "topics": message.topics
 
     unless (message.id? and message.text?)
       console.warn("Could not parse the message from the source, skipping...");
       return false;
 
     options.message = message.text;
-    options.title = @topics[@selectedTopic] unless @selectedTopic is @NO_TOPIC
+    options.title = message.topics[Object.keys(message.topics)[0]] if Object.keys(message.topics).length == 1
 
     if message.timePretty?
       options.title = "[" + message.timePretty + "] " + options.title
