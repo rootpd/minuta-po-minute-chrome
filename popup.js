@@ -92,8 +92,8 @@ function initLatestMessages() {
                 if (typeof wal[id]['thumbnail'] != 'undefined' && wal[id]['thumbnail'] != null) {
                     thumbnail = '' +
                         '<div class="card-image">' +
-                            '<img src="' + wal[id]['thumbnail'] + '">' +
-                            title +
+                        '<img src="' + wal[id]['thumbnail'] + '">' +
+                        title +
                         '</div>';
                     title = '';
                 }
@@ -101,11 +101,11 @@ function initLatestMessages() {
                 var article = document.createElement('div');
                 article.innerHTML = '' +
                     '<div class="card">' +
-                        thumbnail +
-                        '<div class="card-content">' +
-                            title +
-                            wal[id]['excerpt'] +
-                        '</div>' +
+                    thumbnail +
+                    '<div class="card-content">' +
+                    title +
+                    wal[id]['excerpt'] +
+                    '</div>' +
                     '</div>';
                 article.id = "mpm-" + id;
 

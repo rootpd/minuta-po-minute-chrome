@@ -119,7 +119,7 @@ class Notifier
   DEFAULT_SYNC_SETTINGS:
     "sound": "no-sound"
     "interval": 5
-    "messageCount": 3
+    "messageCount": 10
     "displayTime": 10
     "notificationClick": "open"
     "snooze": "off"
@@ -171,21 +171,23 @@ class Notifier
       rawMessages = downloader.getMessages event.target.response;
       storage = {}
       messages = {}
+      topics = {}
 
       for rawMessage in rawMessages.timeline
         break if Object.keys(messages).length == parseInt(@currentSettings['messageCount'])
 
         message = parser.parse rawMessage
+        for own key, value of message.topics
+          topics[key] = value
 
         if message.priority is parser.PRIORITY_STICKY
-          if @selectedTopic == @NO_TOPIC
-            @updateTopics message
-          else
+          if @selectedTopic != @NO_TOPIC
             @updateStickyTopicMessage message
 
           continue
 
-        messages[message.id] = message
+        if Object.keys(messages).length < parseInt(@currentSettings['messageCount'])
+          messages[message.id] = message
 
       @currentSettings['lastSync'] = new Date()
       chrome.storage.local.set {"latestMessageIds": Object.keys(messages)}
@@ -194,8 +196,7 @@ class Notifier
         for id, message of messages
           continue if message.id of alreadyNotifiedMessages
 
-#          if silently
-          if false
+          if silently
             storage[message.id] = {
               "skipped": true
               "targetUrl": message.targetUrl
@@ -204,6 +205,7 @@ class Notifier
               "timePretty": message.timePretty
               "thumbnail": message.thumbnail
               "category": message.category
+              "topics": message.topics
             } if message.excerpt.length > 10
           else
             do (message) =>
@@ -240,12 +242,12 @@ class Notifier
     chrome.storage.local.remove "topics"
     @topics = {}
 
-  updateTopics: (message) =>
-    if Object.keys(@topics).toString() != Object.keys(message.topics).toString()
+  updateTopics: (topics) =>
+    if Object.keys(@topics).toString() != Object.keys(topics).toString()
       chrome.storage.local.set {
-        "topics": message.topics
+        "topics": topics
       }, =>
-        @topics = message.topics
+        @topics = topics
 
   updateStickyTopicMessage: (message) ->
     chrome.storage.local.set {
@@ -262,13 +264,17 @@ class Notifier
       "timePretty": message.timePretty
       "thumbnail": message.thumbnail
       "category": message.category
+      "topics": message.topics
 
     unless (message.id? and message.text?)
       console.warn("Could not parse the message from the source, skipping...");
       return false;
 
-    options.message = message.text;
-    options.title = @topics[@selectedTopic] unless @selectedTopic is @NO_TOPIC
+    options.message = message.text
+    if Object.keys(message.topics).length == 1
+      options.title = message.topics[Object.keys(message.topics)[0]]
+    else if @selectedTopic != @NO_TOPIC && @topics[@selectedTopic]?
+      options.title = @topics[@selectedTopic]
 
     if message.timePretty?
       options.title = "[" + message.timePretty + "] " + options.title
