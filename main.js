@@ -8,7 +8,7 @@
       this.getMessages = bind(this.getMessages, this);
     }
 
-    MinutaAjaxDownloader.prototype.URI = "https://dennikn.sk/api/minuta?tag=";
+    MinutaAjaxDownloader.prototype.URI = "https://dennikn.sk/api/minuta";
 
     MinutaAjaxDownloader.prototype.ARTICLE_REGEX = /(<article[\s\S]*?<\/article>)/ig;
 
@@ -32,6 +32,7 @@
 
   MinutaAjaxMessageParser = (function() {
     function MinutaAjaxMessageParser() {
+      this.getCategory = bind(this.getCategory, this);
       this.getTopics = bind(this.getTopics, this);
       this.getPriority = bind(this.getPriority, this);
       this.getTargetUrl = bind(this.getTargetUrl, this);
@@ -61,7 +62,8 @@
         id: this.getId(),
         targetUrl: this.getTargetUrl(),
         priority: this.getPriority(),
-        topics: this.getTopics()
+        topics: this.getTopics(),
+        category: this.getCategory()
       };
     };
 
@@ -109,7 +111,7 @@
     };
 
     MinutaAjaxMessageParser.prototype.getId = function() {
-      return this.message['id'];
+      return this.message['id'].toString();
     };
 
     MinutaAjaxMessageParser.prototype.getTargetUrl = function() {
@@ -128,15 +130,19 @@
     MinutaAjaxMessageParser.prototype.getTopics = function() {
       var i, len, ref, tag, topics;
       topics = {};
-      if (!this.message['tags']) {
+      if (!this.message['tag']) {
         return topics;
       }
-      ref = this.message['tags'];
+      ref = this.message['tag'];
       for (i = 0, len = ref.length; i < len; i++) {
         tag = ref[i];
         topics[tag['slug']] = tag['name'];
       }
       return topics;
+    };
+
+    MinutaAjaxMessageParser.prototype.getCategory = function() {
+      return this.message['cat'].pop();
     };
 
     MinutaAjaxMessageParser.prototype.decodeHtml = function(html) {
@@ -179,7 +185,7 @@
   })();
 
   Notifier = (function() {
-    Notifier.prototype.NO_TOPIC = "0";
+    Notifier.prototype.NO_TOPIC = "";
 
     Notifier.prototype.LOGO = "/images/icon512.png";
 
@@ -189,10 +195,10 @@
       "sound": "no-sound",
       "interval": 5,
       "messageCount": 3,
-      "importantOnly": false,
       "displayTime": 10,
       "notificationClick": "open",
-      "snooze": "off"
+      "snooze": "off",
+      "lastSync": Date.now()
     };
 
     Notifier.prototype.DEFAULT_LOCAL_SETTINGS = {
@@ -253,7 +259,7 @@
     Notifier.prototype.downloadMessages = function(downloader, parser, silently) {
       var minutesInterval;
       if (!silently) {
-        silently = this.currentSettings['snooze'] !== 'off' && this.currentSettings['snooze'] > (new Date()).getTime();
+        silently = this.currentSettings['snooze'] !== 'off' && this.currentSettings['snooze'] > Date.now();
       }
       minutesInterval = (this.currentSettings['interval'] != null) && parseInt(this.currentSettings['interval']) >= 1 ? parseInt(this.currentSettings['interval']) : 1;
       chrome.storage.local.remove("stickyTopicMessage");
@@ -262,12 +268,13 @@
       }
       return downloader.xhrDownload("text", downloader.URI + this.selectedTopic, (function(_this) {
         return function(event) {
-          var i, len, message, messages, rawMessage, rawMessages, storage;
+          var i, len, message, messages, rawMessage, rawMessages, ref, storage;
           rawMessages = downloader.getMessages(event.target.response);
           storage = {};
           messages = {};
-          for (i = 0, len = rawMessages.length; i < len; i++) {
-            rawMessage = rawMessages[i];
+          ref = rawMessages.timeline;
+          for (i = 0, len = ref.length; i < len; i++) {
+            rawMessage = ref[i];
             if (Object.keys(messages).length === parseInt(_this.currentSettings['messageCount'])) {
               break;
             }
@@ -282,6 +289,7 @@
             }
             messages[message.id] = message;
           }
+          _this.currentSettings['lastSync'] = new Date();
           chrome.storage.local.set({
             "latestMessageIds": Object.keys(messages)
           });
@@ -293,14 +301,16 @@
               if (message.id in alreadyNotifiedMessages) {
                 continue;
               }
-              if (silently || (_this.currentSettings['importantOnly'] && message.priority !== parser.PRIORITY_IMPORTANT)) {
+              if (false) {
                 if (message.excerpt.length > 10) {
                   storage[message.id] = {
                     "skipped": true,
                     "targetUrl": message.targetUrl,
                     "excerpt": message.excerpt,
                     "html": message.html,
-                    "timePretty": message.timePretty
+                    "timePretty": message.timePretty,
+                    "thumbnail": message.thumbnail,
+                    "category": message.category
                   };
                 }
               } else {
@@ -334,7 +344,7 @@
           _this.currentSettings = val;
           chrome.storage.sync.clear();
           chrome.storage.sync.set(val);
-          if (val['sound'] !== 'no-sound' && ((_this.notificationSound == null) || _this.notificationSound.src.indexOf(val['sound']) === -1)) {
+          if (val['sound'] !== 'no-sound' && ((_this.notificationSound == null) || _this.notificationSounddsrc.indexOf(val['sound']) === -1)) {
             _this.notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
           }
           return chrome.storage.local.get(_this.DEFAULT_LOCAL_SETTINGS, function(wal) {
@@ -379,7 +389,9 @@
         "excerpt": message.excerpt,
         "html": message.html,
         "skipped": false,
-        "timePretty": message.timePretty
+        "timePretty": message.timePretty,
+        "thumbnail": message.thumbnail,
+        "category": message.category
       };
       if (!((message.id != null) && (message.text != null))) {
         console.warn("Could not parse the message from the source, skipping...");

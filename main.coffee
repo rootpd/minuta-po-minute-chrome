@@ -1,5 +1,5 @@
 class MinutaAjaxDownloader
-  URI: "https://dennikn.sk/api/minuta?tag="
+  URI: "https://dennikn.sk/api/minuta"
   ARTICLE_REGEX: /(<article[\s\S]*?<\/article>)/ig
 
   xhrDownload: (responseType, URI, successCallback, errorCallback) ->
@@ -37,6 +37,7 @@ class MinutaAjaxMessageParser
       targetUrl: @getTargetUrl()
       priority: @getPriority()
       topics: @getTopics()
+      category: @getCategory()
     }
 
   getFigure: =>
@@ -71,7 +72,7 @@ class MinutaAjaxMessageParser
     return html
 
   getId: =>
-    @message['id']
+    @message['id'].toString()
 
   getTargetUrl: =>
     @message['url']
@@ -82,12 +83,15 @@ class MinutaAjaxMessageParser
 
   getTopics: =>
     topics = {}
-    return topics unless @message['tags']
+    return topics unless @message['tag']
 
-    for tag in @message['tags']
+    for tag in @message['tag']
       topics[tag['slug']] = tag['name']
 
     topics
+
+  getCategory: =>
+    return @message['cat'].pop()
 
   decodeHtml: (html) ->
     txt = document.createElement "textarea"
@@ -106,7 +110,7 @@ class Minuta
   constructor: (@thumbnail, @time, @message, @id, @targetUrl, @priority) ->
 
 class Notifier
-  NO_TOPIC: "0"
+  NO_TOPIC: ""
   LOGO: "/images/icon512.png"
   BUTTONS: [
     chrome.i18n.getMessage("readMoreButton")
@@ -116,10 +120,10 @@ class Notifier
     "sound": "no-sound"
     "interval": 5
     "messageCount": 3
-    "importantOnly": false
     "displayTime": 10
     "notificationClick": "open"
     "snooze": "off"
+    "lastSync": Date.now()
 
   DEFAULT_LOCAL_SETTINGS:
     "selectedTopic": ""
@@ -154,7 +158,7 @@ class Notifier
 
   downloadMessages: (downloader, parser, silently) =>
     if not silently
-      silently = @currentSettings['snooze'] != 'off' and @currentSettings['snooze'] > (new Date()).getTime()
+      silently = @currentSettings['snooze'] != 'off' and @currentSettings['snooze'] > Date.now()
 
     minutesInterval =
       if @currentSettings['interval']? and parseInt(@currentSettings['interval']) >= 1
@@ -168,7 +172,7 @@ class Notifier
       storage = {}
       messages = {}
 
-      for rawMessage in rawMessages
+      for rawMessage in rawMessages.timeline
         break if Object.keys(messages).length == parseInt(@currentSettings['messageCount'])
 
         message = parser.parse rawMessage
@@ -183,19 +187,23 @@ class Notifier
 
         messages[message.id] = message
 
+      @currentSettings['lastSync'] = new Date()
       chrome.storage.local.set {"latestMessageIds": Object.keys(messages)}
       chrome.storage.local.get Object.keys(messages), (alreadyNotifiedMessages) =>
         delay = 0
         for id, message of messages
           continue if message.id of alreadyNotifiedMessages
 
-          if (silently) or (@currentSettings['importantOnly'] and message.priority != parser.PRIORITY_IMPORTANT)
+#          if silently
+          if false
             storage[message.id] = {
               "skipped": true
               "targetUrl": message.targetUrl
               "excerpt": message.excerpt
               "html": message.html
               "timePretty": message.timePretty
+              "thumbnail": message.thumbnail
+              "category": message.category
             } if message.excerpt.length > 10
           else
             do (message) =>
@@ -220,7 +228,7 @@ class Notifier
       chrome.storage.sync.clear()
       chrome.storage.sync.set val
 
-      if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSound.src.indexOf(val['sound']) == -1)
+      if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSounddsrc.indexOf(val['sound']) == -1)
         @notificationSound = new Audio('sounds/' + val['sound'] + '.mp3')
         
       chrome.storage.local.get @DEFAULT_LOCAL_SETTINGS, (wal) =>
@@ -252,6 +260,8 @@ class Notifier
       "html": message.html
       "skipped": false
       "timePretty": message.timePretty
+      "thumbnail": message.thumbnail
+      "category": message.category
 
     unless (message.id? and message.text?)
       console.warn("Could not parse the message from the source, skipping...");

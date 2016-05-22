@@ -4,48 +4,63 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
     <meta name="theme-color" content="#b00c28">
-    <link href="https://dennikn.sk/wp-content/themes/dnwp/bundle.5.css" rel="stylesheet">
+    <link rel="stylesheet" href="materialize.min.css">
+    <script type="text/javascript" src="jquery-2.1.1.min.js"></script>
+    <script src="materialize.min.js"></script>
     <link href="styles.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <title>Minúta po minúte</title>
     <script type="text/javascript" src="popup.js"></script>
 </head>
 
 <body class="popup">
 
-<div class="a_minute compact" id="topic-selector">
-    <div>Filtrovať správy podľa témy:</div>
-    <span class="e_button red i compact" id="unbind-topic" style="display: none">x</span>
-    <div id="no-topics-available"><em><small>Momentálne nie sú dostupné žiadne témy...</small></em></div>
-    <div id="sticky-topic-message"></div>
-</div>
+<div class="card blue-grey darken-1">
+    <div class="card-content white-text">
+        <span class="card-title">Udalosti rozšírenia</span>
 
-<div class="a_minute compact">
-    <div id="snooze-timer">
-        <img src="images/snooze48.png" style="height: 24px;float: left;" />
-        <span id="snooze-timer-value" style="line-height: 36px; margin-left: 5px;"></span>
-        <span class="e_button red i compact" id="unbind-snooze">x</span>
-    </div>
-
-    <div id="snooze-setting">
-        <label for="snooze">Pozastaviť notifikácie:</label>
-        <select id="snooze" name="snooze">
-            <option value="30" selected>30 minút</option>
-            <option value="60">1 hodina</option>
-            <option value="120">2 hodiny</option>
-            <option value="180">3 hodiny</option>
-            <option value="300">5 hodín</option>
-            <option value="480">8 hodín</option>
-        </select>
-        <button id="set-snooze" class="e_button red i">Uložiť</button>
+        <div id="sync-time">
+            <i class="material-icons prefix">loop</i> Posledná synchronizácia:
+            <span id="sync-time-value" style="margin-left: 5px;"></span>
+        </div>
+        <div id="snooze-timer">
+            <i class="material-icons prefix">snooze</i> Pozastavenie notifikácií:
+            <span id="snooze-timer-value" style="margin-left: 5px;"></span> |
+            <i class="material-icons prefix" id="unbind-snooze" style="cursor: pointer">not_interested</i>
+        </div>
     </div>
 </div>
 
-<div id="latest-messages"></div>
+<div id="latest-messages" class="row"></div>
 
-<footer class="s s_footer">
-    <nav class="footer">
-        <a target="_blank" href="https://dennikn.sk/">Copyright © N Press, s. r. o.</a>
-    </nav>
+<div class="card blue-grey darken-1">
+    <div class="card-content white-text">
+        <span class="card-title">Nastavenia</span>
+
+        <div id="snooze-setting">
+            <div class="input-field">
+                <select id="snooze" name="snooze">
+                    <option value="" disabled selected>Pozastaviť notifikácie</option>
+                    <option value="30">30 minút</option>
+                    <option value="60">1 hodina</option>
+                    <option value="120">2 hodiny</option>
+                    <option value="180">3 hodiny</option>
+                    <option value="300">5 hodín</option>
+                    <option value="480">8 hodín</option>
+                </select>
+            </div>
+            <button id="set-snooze" class="btn">Uložiť</button>
+        </div>
+    </div>
+</div>
+
+<footer class="page-footer">
+    <div class="footer-copyright">
+        <div class="container">
+            <a target="_blank" class="grey-text text-lighten-4 left" href="https://bayloft.co">extension by bayloft</a>
+            <a target="_blank" class="grey-text text-lighten-4 right" href="https://dennikn.sk">Copyright © N Press, s. r. o.</a>
+        </div>
+    </div>
 </footer>
 
 </body>

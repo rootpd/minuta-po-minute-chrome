@@ -2,7 +2,6 @@ function saveOptions() {
     var interval = getElementValue("interval");
     var sound = getElementValue("sound");
     var messageCount = getElementValue("message-count");
-    var importantOnly = document.getElementById("important-only").checked;
     var displayTime = getElementValue("display-time");
     var notificationClick = getElementValue("notification-click");
 
@@ -10,7 +9,6 @@ function saveOptions() {
         "sound": sound,
         "interval": interval,
         "messageCount": messageCount,
-        "importantOnly": importantOnly,
         "displayTime": displayTime,
         "notificationClick": notificationClick
     }, function() {
@@ -42,19 +40,21 @@ function restoreOptions() {
         "sound": "no-sound",
         "interval": 5,
         "messageCount": 3,
-        "importantOnly": false,
         "displayTime": 10,
         "notificationClick": "open"
     }, function(items) {
         document.getElementById('interval').value = items['interval'];
         document.getElementById('sound').value = items['sound'];
         document.getElementById('message-count').value = items['messageCount'];
-        document.getElementById('important-only').checked = items['importantOnly'];
         document.getElementById('display-time').value = items['displayTime'];
         document.getElementById('notification-click').value = items['notificationClick'];
     });
 
 }
 
-document.addEventListener('DOMContentLoaded', restoreOptions);
-document.getElementById('save').addEventListener('click', saveOptions);
+$(document).ready(function() {
+    $('select').material_select();
+    restoreOptions();
+    $('#save').bind('click', saveOptions);
+});
+

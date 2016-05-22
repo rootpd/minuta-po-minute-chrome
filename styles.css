@@ -18,137 +18,20 @@ body.options {
     width: 630px;
 }
 body.popup {
-    font-family: 'Open Sans', sans-serif;
     font-size: 10pt;
     padding: 0 10px;
-    width: 300px;
+    width: 400px;
 }
 
-button {
-    width: 140px;
-    margin-right: 20px;
+.material-icons.prefix {
+    vertical-align: bottom;
 }
 
-#save {
-    margin-top: 4px;
-    box-shadow: none !important;
-    border-color: #80091D !important;
-    background: none !important;
+.card-title .logo {
+    width: 26px;
+    margin-right: 5px;
+    vertical-align: text-bottom;
 }
-
-#sticky-topic-message {
-    font-size: 12px;
-    margin-top: 10px;
-    display: none;
-}
-
-.a_minute, .a_minute select {
-    font-family: 'Open Sans', sans-serif;
-}
-.a_minute.checkbox label {
-    display: inline-block;
-    margin-left: 5px;
-    vertical-align: middle;
-    padding: 0;
-}
-.a_minute.checkbox input {
-    display: inline-block;
-}
-
-input, select {
-    padding: 5px 20px 5px 5px;
-    border: none !important;
-    border-bottom: solid 2px #c9c9c9 !important;
-    transition: border 0.3s;
-    background-color: #EDECEC;
-    width: 260px;
-}
-input[type="checkbox"] {
-    padding: 0;
-}
-input[type="number"] {
-    width: 50px;
-}
-input:focus, select:focus,
-input.focus, select.focus {
-    border-bottom: solid 2px #80091d !important;
-}
-
-.a_minute {
-    padding: 10px 0;
-}
-.a_minute.compact {
-    padding: 3px 10px 9px;
-    background-color: #fff0b2;
-    width: 110%;
-    margin-left: -10px;
-}
-
-.i {
-    font: normal normal normal 16px/1 icons;
-    font-size: inherit;
-    text-rendering: auto;
-    display: inline-block;
-    text-transform: none;
-    vertical-align: baseline;
-}
-.i_check:before {
-    content: ''
-}
-.i_check:after {
-    content: '\E005'
-}
-.s-container {
-    width: 630px;
-}
-.s_header .login {
-    width: 156px;
-    text-transform: uppercase;
-    padding-top: 14px;
-}
-.s_header .logo {
-    background: #B00C28;
-}
-.s_header .logo a {
-    padding: 0 10px 0 10px;
-}
-.s_header #minuta-logo {
-    position: absolute;
-    top: 0;
-    right: 175px;
-}
-
-body .e_button {
-    font-family: 'Open Sans', sans-serif;;
-}
-
-body.popup select {
-    width: 155px;
-    display: inline-block;
-}
-body.popup .e_button {
-    color: #b00c28;
-    width: auto;
-    height: auto;
-    padding: 6px;
-    line-height: initial;
-    margin: 0 0 0 3px;
-    display: inline-block;
-}
-body.popup .e_button.compact {
-    padding: 2px 4px;
-    font-size: 13px;
-}
-.minutatopic {
-    margin-right: 3px;
-}
-.e-headerbox {
-    padding: 5px;
-}
-.s_footer {
-    margin: 4px 0;
-    text-align: center;
-    background: none;
-    border-top: 2px solid #B00C28;
-    color: #3b3b3b;
+.card-image .logo {
+    display: none !important;
 }
