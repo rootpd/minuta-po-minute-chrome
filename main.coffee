@@ -205,7 +205,6 @@ class Notifier
               "timePretty": message.timePretty
               "thumbnail": message.thumbnail
               "category": message.category
-              "topics": message.topics
             } if message.excerpt.length > 10
           else
             do (message) =>
