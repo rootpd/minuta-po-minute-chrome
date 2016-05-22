@@ -9,7 +9,7 @@
       this.getMessages = bind(this.getMessages, this);
     }
 
-    MinutaAjaxDownloader.prototype.URI = "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag=";
+    MinutaAjaxDownloader.prototype.URI = "https://dennikn.sk/api/minuta";
 
     MinutaAjaxDownloader.prototype.ARTICLE_REGEX = /(<article[\s\S]*?<\/article>)/ig;
 
@@ -24,7 +24,7 @@
     };
 
     MinutaAjaxDownloader.prototype.getMessages = function(response) {
-      return response.match(this.ARTICLE_REGEX);
+      return JSON.parse(response);
     };
 
     return MinutaAjaxDownloader;
@@ -33,6 +33,7 @@
 
   MinutaAjaxMessageParser = (function() {
     function MinutaAjaxMessageParser() {
+      this.getCategory = bind(this.getCategory, this);
       this.getTopics = bind(this.getTopics, this);
       this.getPriority = bind(this.getPriority, this);
       this.getTargetUrl = bind(this.getTargetUrl, this);
@@ -41,34 +42,18 @@
       this.getFigure = bind(this.getFigure, this);
     }
 
-    MinutaAjaxMessageParser.prototype.TARGET_URL_REGEX = /https?:\/\/dennikn.sk\/minuta\/(\d+)/;
-
-    MinutaAjaxMessageParser.prototype.TIME_REGEX = /(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)/;
-
-    MinutaAjaxMessageParser.prototype.MESSAGE_REGEX = /<article.*?>(.*?)<\/article>/g;
-
-    MinutaAjaxMessageParser.prototype.MESSAGE_EXCERPT_REGEX = /<p>(.*?)<\/p>/gi;
-
     MinutaAjaxMessageParser.prototype.HTML_REGEX = /(<([^>]+)>)/ig;
 
-    MinutaAjaxMessageParser.prototype.IMAGE_REGEX = /<img.*?src="(.*?)"/;
-
-    MinutaAjaxMessageParser.prototype.ARTICLE_ID_REGEX = /article id="mpm-(\d+)"/;
-
-    MinutaAjaxMessageParser.prototype.PRIORITY_REGEX = /article.*?class="([^>]*?)"/;
-
     MinutaAjaxMessageParser.prototype.YOUTUBE_REGEX = /youtube\.com\/embed\/(.*?)[\/\?]/;
-
-    MinutaAjaxMessageParser.prototype.TOPIC_REGEX = /<a href="https:\/\/dennikn.sk\/tema\/(.*?)\/" class="d-tag">(.*?)<\/a>/g;
 
     MinutaAjaxMessageParser.prototype.PRIORITY_STICKY = "sticky";
 
     MinutaAjaxMessageParser.prototype.PRIORITY_IMPORTANT = "important";
 
-    MinutaAjaxMessageParser.prototype.messageBody = null;
+    MinutaAjaxMessageParser.prototype.message = null;
 
-    MinutaAjaxMessageParser.prototype.parse = function(messageBody) {
-      this.messageBody = messageBody.replace(/\s+/g, " ");
+    MinutaAjaxMessageParser.prototype.parse = function(message) {
+      this.message = message;
       return {
         thumbnail: this.getFigure(),
         timePretty: this.getTimePretty(),
@@ -78,101 +63,87 @@
         id: this.getId(),
         targetUrl: this.getTargetUrl(),
         priority: this.getPriority(),
-        topics: this.getTopics()
+        topics: this.getTopics(),
+        category: this.getCategory()
       };
     };
 
     MinutaAjaxMessageParser.prototype.getFigure = function() {
       var matches;
-      matches = this.messageBody.match(this.IMAGE_REGEX);
-      if (matches !== null && matches.length === 2) {
-        return matches[1];
+      if ((this.message['image'] != null) && (this.message['image']['large'] != null)) {
+        return this.message['image']['large'];
       }
-      matches = this.messageBody.match(this.YOUTUBE_REGEX);
-      if ((matches != null) && matches.length === 2) {
-        return "http://img.youtube.com/vi/" + matches[1] + "/mqdefault.jpg";
+      if (this.message['embed'] != null) {
+        matches = this.message['embed']['html'].match(this.YOUTUBE_REGEX);
+        if ((matches != null) && matches.length === 2) {
+          return "http://img.youtube.com/vi/" + matches[1] + "/mqdefault.jpg";
+        }
       }
     };
 
     MinutaAjaxMessageParser.prototype.getTimePretty = function() {
-      var matches;
-      matches = this.messageBody.match(this.TIME_REGEX);
-      if ((matches != null) && matches.length === 7) {
-        return ("0" + matches[4]).slice(-2) + ":" + ("0" + matches[5]).slice(-2);
-      }
+      var date;
+      date = new Date(this.message['created']);
+      return date.toLocaleTimeString();
     };
 
     MinutaAjaxMessageParser.prototype.getText = function() {
-      var matches, value;
-      matches = this.messageBody.match(this.MESSAGE_EXCERPT_REGEX);
-      if ((matches != null) && matches.length > 0) {
-        value = matches[0].replace(this.HTML_REGEX, "");
-        return this.decodeHtml(value);
-      }
+      var value;
+      value = this.message['content']['main'].replace(this.HTML_REGEX, "");
+      return this.decodeHtml(value);
     };
 
     MinutaAjaxMessageParser.prototype.getHtmlExcerpt = function() {
-      var i, len, match, matches;
-      matches = this.messageBody.match(this.MESSAGE_EXCERPT_REGEX);
-      if (matches == null) {
-        return null;
-      }
-      for (i = 0, len = matches.length; i < len; i++) {
-        match = matches[i];
-        if (match.length > 15) {
-          return match;
-        }
-      }
-      return null;
+      return this.message['content']['main'];
     };
 
     MinutaAjaxMessageParser.prototype.getHtml = function() {
-      var matches;
-      matches = this.MESSAGE_REGEX.exec(this.messageBody);
-      if (matches != null) {
-        return matches[1];
+      var figure, html;
+      if (this.message['content']['extended'] != null) {
+        html = this.message['content']['extended'];
+      } else {
+        html = this.message['content']['main'];
       }
+      figure = this.getFigure();
+      if (figure != null) {
+        html += "<p><img src='" + figure + "' /></p>";
+      }
+      return html;
     };
 
     MinutaAjaxMessageParser.prototype.getId = function() {
-      var matches;
-      matches = this.messageBody.match(this.ARTICLE_ID_REGEX);
-      if (matches != null) {
-        return matches[1];
-      }
+      return this.message['id'].toString();
     };
 
     MinutaAjaxMessageParser.prototype.getTargetUrl = function() {
-      var matches;
-      matches = this.messageBody.match(this.TARGET_URL_REGEX);
-      if ((matches != null) && matches.length === 2) {
-        return matches[0];
-      }
+      return this.message['url'];
     };
 
     MinutaAjaxMessageParser.prototype.getPriority = function() {
-      var classes, matches;
-      matches = this.messageBody.match(this.PRIORITY_REGEX);
-      if ((matches != null) && matches.length === 2) {
-        classes = matches[1];
-        if (classes.indexOf("important") !== -1) {
-          return this.PRIORITY_IMPORTANT;
-        }
-        if (classes.indexOf("sticky") !== -1) {
-          return this.PRIORITY_STICKY;
-        }
+      if ((this.message['important'] != null) && this.message['important'] === true) {
+        return this.PRIORITY_IMPORTANT;
+      }
+      if ((this.message['sticky'] != null) && this.message['sticky'] === true) {
+        return this.PRIORITY_STICKY;
       }
     };
 
     MinutaAjaxMessageParser.prototype.getTopics = function() {
-      var topic, topics;
+      var i, len, ref, tag, topics;
       topics = {};
-      topic = this.TOPIC_REGEX.exec(this.messageBody);
-      while ((topic != null) && topic.length > 2) {
-        topics[topic[1]] = this.decodeHtml(topic[2]);
-        topic = this.TOPIC_REGEX.exec(this.messageBody);
+      if (!this.message['tag']) {
+        return topics;
+      }
+      ref = this.message['tag'];
+      for (i = 0, len = ref.length; i < len; i++) {
+        tag = ref[i];
+        topics[tag['slug']] = tag['name'];
       }
       return topics;
+    };
+
+    MinutaAjaxMessageParser.prototype.getCategory = function() {
+      return this.message['cat'].pop();
     };
 
     MinutaAjaxMessageParser.prototype.decodeHtml = function(html) {
@@ -215,7 +186,7 @@
   })();
 
   Notifier = (function() {
-    Notifier.prototype.NO_TOPIC = "0";
+    Notifier.prototype.NO_TOPIC = "";
 
     Notifier.prototype.LOGO = "/images/icon512.png";
 
@@ -225,14 +196,14 @@
       "sound": "no-sound",
       "interval": 5,
       "messageCount": 10,
-      "importantOnly": false,
       "displayTime": 10,
       "notificationClick": "open",
-      "snooze": "off"
+      "snooze": "off",
+      "lastSync": Date.now()
     };
 
     Notifier.prototype.DEFAULT_LOCAL_SETTINGS = {
-      "selectedTopic": "0",
+      "selectedTopic": "",
       "topics": {}
     };
 
@@ -289,7 +260,7 @@
     Notifier.prototype.downloadMessages = function(downloader, parser, silently) {
       var minutesInterval;
       if (!silently) {
-        silently = this.currentSettings['snooze'] !== 'off' && this.currentSettings['snooze'] > (new Date()).getTime();
+        silently = this.currentSettings['snooze'] !== 'off' && this.currentSettings['snooze'] > Date.now();
       }
       minutesInterval = (this.currentSettings['interval'] != null) && parseInt(this.currentSettings['interval']) >= 1 ? parseInt(this.currentSettings['interval']) : 1;
       chrome.storage.local.remove("stickyTopicMessage");
@@ -298,18 +269,22 @@
       }
       return downloader.xhrDownload("text", downloader.URI + this.selectedTopic, (function(_this) {
         return function(event) {
-          var i, key, len, message, messages, rawMessage, rawMessages, ref, storage, topics, value;
+          var i, key, len, message, messages, rawMessage, rawMessages, ref, ref1, storage, topics, value;
           rawMessages = downloader.getMessages(event.target.response);
           storage = {};
           messages = {};
           topics = {};
-          for (i = 0, len = rawMessages.length; i < len; i++) {
-            rawMessage = rawMessages[i];
+          ref = rawMessages.timeline;
+          for (i = 0, len = ref.length; i < len; i++) {
+            rawMessage = ref[i];
+            if (Object.keys(messages).length === parseInt(_this.currentSettings['messageCount'])) {
+              break;
+            }
             message = parser.parse(rawMessage);
-            ref = message.topics;
-            for (key in ref) {
-              if (!hasProp.call(ref, key)) continue;
-              value = ref[key];
+            ref1 = message.topics;
+            for (key in ref1) {
+              if (!hasProp.call(ref1, key)) continue;
+              value = ref1[key];
               topics[key] = value;
             }
             if (message.priority === parser.PRIORITY_STICKY) {
@@ -322,9 +297,7 @@
               messages[message.id] = message;
             }
           }
-          if (_this.selectedTopic === _this.NO_TOPIC) {
-            _this.updateTopics(topics);
-          }
+          _this.currentSettings['lastSync'] = new Date();
           chrome.storage.local.set({
             "latestMessageIds": Object.keys(messages)
           });
@@ -336,14 +309,16 @@
               if (message.id in alreadyNotifiedMessages) {
                 continue;
               }
-              if (silently || (_this.currentSettings['importantOnly'] && message.priority !== parser.PRIORITY_IMPORTANT)) {
+              if (silently) {
                 if (message.excerpt.length > 10) {
                   storage[message.id] = {
                     "skipped": true,
                     "targetUrl": message.targetUrl,
                     "excerpt": message.excerpt,
+                    "html": message.html,
                     "timePretty": message.timePretty,
-                    "topics": message.topics
+                    "thumbnail": message.thumbnail,
+                    "category": message.category
                   };
                 }
               } else {
@@ -377,7 +352,7 @@
           _this.currentSettings = val;
           chrome.storage.sync.clear();
           chrome.storage.sync.set(val);
-          if (val['sound'] !== 'no-sound' && ((_this.notificationSound == null) || _this.notificationSound.src.indexOf(val['sound']) === -1)) {
+          if (val['sound'] !== 'no-sound' && ((_this.notificationSound == null) || _this.notificationSounddsrc.indexOf(val['sound']) === -1)) {
             _this.notificationSound = new Audio('sounds/' + val['sound'] + '.mp3');
           }
           return chrome.storage.local.get(_this.DEFAULT_LOCAL_SETTINGS, function(wal) {
@@ -420,8 +395,11 @@
       meta = {
         "targetUrl": message.targetUrl,
         "excerpt": message.excerpt,
+        "html": message.html,
         "skipped": false,
         "timePretty": message.timePretty,
+        "thumbnail": message.thumbnail,
+        "category": message.category,
         "topics": message.topics
       };
       if (!((message.id != null) && (message.text != null))) {

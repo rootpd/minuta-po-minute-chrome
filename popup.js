@@ -68,80 +68,6 @@ function removeSnoozeTimer() {
     });
 }
 
-function initTopicSelector() {
-    var topicSelector = document.getElementById("topic-selector");
-    var topicSelectorLastChild = document.getElementById("unbind-topic");
-
-    chrome.storage.local.get("topics", function(val) {
-        for (var key in val['topics']) {
-            if (!val['topics'].hasOwnProperty(key)) {
-                continue;
-            }
-
-            document.getElementById("no-topics-available").style.display = "none";
-
-            var a = document.createElement('a');
-            a.textContent = val['topics'][key];
-            a.classList.add('d-tag');
-            a.addEventListener("click", setTopicFilter);
-            a.href = "#tema=" + val['topics'][key];
-            a.id = key;
-
-            topicSelector.insertBefore(a, topicSelectorLastChild);
-        }
-
-        chrome.storage.local.get("selectedTopic", function(wal) {
-            if (typeof wal['selectedTopic'] != 'undefined') {
-                setTopicFilterCallback(wal['selectedTopic']);
-            }
-        });
-    });
-}
-
-function setTopicFilter(evt) {
-    chrome.storage.local.set({"selectedTopic": evt.srcElement.id}, function() {
-        setTopicFilterCallback(evt.srcElement.id);
-    });
-}
-
-function setTopicFilterCallback(selectedElementId) {
-    var srcElement = document.getElementById(selectedElementId);
-    var topics = document.getElementsByClassName("d-tag");
-
-    for (var i=0; i < topics.length; i++) {
-        topics[i].style.display = 'none';
-    }
-
-    srcElement.blur();
-    srcElement.style.display = 'inline-block';
-
-    document.getElementById("unbind-topic").style.display = 'inline-block';
-
-    chrome.storage.local.get("stickyTopicMessage", function(val) {
-        var message = document.getElementById('sticky-topic-message');
-
-        if (typeof val['stickyTopicMessage'] !== 'undefined' && val['stickyTopicMessage'].length > 5) {
-            message.innerHTML = val['stickyTopicMessage'];
-            message.style.display = "block";
-        } else {
-            message.style.display = "none";
-        }
-    });
-}
-
-function removeTopicFilter() {
-    document.getElementById("unbind-topic").style.display = 'none';
-    document.getElementById("sticky-topic-message").style.display = 'none';
-
-    var topics = document.getElementsByClassName("d-tag");
-    for (var i=0; i < topics.length; i++) {
-        topics[i].style.display = 'inline-block';
-    }
-
-    chrome.storage.local.remove("selectedTopic");
-    chrome.storage.local.remove("stickyTopicMessage");
-}
-
 function initLatestMessages() {
     chrome.storage.local.get("latestMessageIds", function(val) {
         var query = {};
@@ -161,19 +87,26 @@ function initLatestMessages() {
                     continue;
                 }
 
-                var article = document.createElement('article');
-                var title = '<h3 class="title"><a href="' + wal[id]['targetUrl'] + "?ref=ext" + '"><time class="d-posted">' + wal[id]['timePretty'] + '</time></a></h3>';
-
-                var topics = "";
-                for (var tag in wal[id]['topics']) {
-                    if (wal[id]['topics'].hasOwnProperty(tag)) {
-                        topics += '<a href="https://dennikn.sk/tema/' + tag + '/?ref=mpm" class="d-tag">' + wal[id]['topics'][tag] + '</a>';
-                    }
+                var thumbnail = '';
+                var title = '<span class="card-title"><img class="logo" src="images/mpm.svg" />' + wal[id]['category']['name'] + ' | ' + wal[id]['timePretty'] + '</span>';
+                if (typeof wal[id]['thumbnail'] != 'undefined' && wal[id]['thumbnail'] != null) {
+                    thumbnail = '' +
+                        '<div class="card-image">' +
+                        '<img src="' + wal[id]['thumbnail'] + '">' +
+                        title +
+                        '</div>';
+                    title = '';
                 }
-                topics = '<nav class="e_tags">'+topics+'</nav>';
 
-                article.innerHTML = title + ' ' + wal[id]['excerpt'] + topics;
-                article.classList.add('a_minute');
+                var article = document.createElement('div');
+                article.innerHTML = '' +
+                    '<div class="card">' +
+                    thumbnail +
+                    '<div class="card-content">' +
+                    title +
+                    wal[id]['excerpt'] +
+                    '</div>' +
+                    '</div>';
                 article.id = "mpm-" + id;
 
                 latestMessages.appendChild(article);
@@ -187,13 +120,29 @@ function initLatestMessages() {
     });
 }
 
-window.addEventListener("load", function() {
-    initTopicSelector();
+Date.prototype.timeNow = function () {
+    return ((this.getHours() < 10)?"0":"") + this.getHours() +":"+ ((this.getMinutes() < 10)?"0":"") + this.getMinutes() +":"+ ((this.getSeconds() < 10)?"0":"") + this.getSeconds();
+};
+
+function initLastSyncTime() {
+    var syncTimeValue = $('#sync-time-value');
+
+    chrome.storage.sync.get("syncTime", function(val) {
+        if (typeof val['syncTime'] == 'undefined') {
+            val['syncTime'] = Date.now();
+        }
+
+        syncTimeValue.text((new Date(val['syncTime'])).timeNow());
+    });
+}
+
+$(document).ready(function() {
+    $('select').material_select();
+
     initSnoozeTimer();
     initLatestMessages();
+    initLastSyncTime();
 
-    document.getElementById("set-snooze").addEventListener("click", setSnoozeTimer);
-    document.getElementById("unbind-snooze").addEventListener("click", removeSnoozeTimer);
-    document.getElementById("unbind-topic").addEventListener("click", removeTopicFilter);
+    $("#set-snooze").bind("click", setSnoozeTimer);
+    $("#unbind-snooze").bind("click", removeSnoozeTimer);
 });
-

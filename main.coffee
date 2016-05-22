@@ -1,5 +1,5 @@
 class MinutaAjaxDownloader
-  URI: "https://dennikn.sk/wp-admin/admin-ajax.php?action=minute&home=0&tag="
+  URI: "https://dennikn.sk/api/minuta"
   ARTICLE_REGEX: /(<article[\s\S]*?<\/article>)/ig
 
   xhrDownload: (responseType, URI, successCallback, errorCallback) ->
@@ -12,28 +12,20 @@ class MinutaAjaxDownloader
     xhr.send(null)
 
   getMessages: (response) =>
-    response.match(@ARTICLE_REGEX)
+    JSON.parse(response)
 
 
 class MinutaAjaxMessageParser
-  TARGET_URL_REGEX: /https?:\/\/dennikn.sk\/minuta\/(\d+)/
-  TIME_REGEX: /(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)/
-  MESSAGE_REGEX: /<article.*?>(.*?)<\/article>/g
-  MESSAGE_EXCERPT_REGEX: /<p>(.*?)<\/p>/gi
   HTML_REGEX: /(<([^>]+)>)/ig
-  IMAGE_REGEX: /<img.*?src="(.*?)"/
-  ARTICLE_ID_REGEX: /article id="mpm-(\d+)"/
-  PRIORITY_REGEX: /article.*?class="([^>]*?)"/
   YOUTUBE_REGEX: /youtube\.com\/embed\/(.*?)[\/\?]/
-  TOPIC_REGEX: /<a href="https:\/\/dennikn.sk\/tema\/(.*?)\/" class="d-tag">(.*?)<\/a>/g
 
   PRIORITY_STICKY: "sticky"
   PRIORITY_IMPORTANT: "important"
 
-  messageBody: null
+  message: null
 
-  parse: (messageBody) ->
-    @messageBody = messageBody.replace /\s+/g," "
+  parse: (message) ->
+    @message = message
 
     return {
       thumbnail: @getFigure()
@@ -45,73 +37,61 @@ class MinutaAjaxMessageParser
       targetUrl: @getTargetUrl()
       priority: @getPriority()
       topics: @getTopics()
+      category: @getCategory()
     }
 
   getFigure: =>
-    matches = @messageBody.match(@IMAGE_REGEX)
+    return @message['image']['large'] if @message['image']? and @message['image']['large']?
 
-    if matches != null && matches.length == 2
-      return matches[1]
-
-    matches = @messageBody.match(@YOUTUBE_REGEX)
-    if matches? and matches.length == 2
-      return "http://img.youtube.com/vi/" + matches[1] + "/mqdefault.jpg"
+    if @message['embed']?
+      matches = @message['embed']['html'].match(@YOUTUBE_REGEX)
+      if matches? and matches.length == 2
+        return "http://img.youtube.com/vi/" + matches[1] + "/mqdefault.jpg"
 
   getTimePretty: =>
-    matches = @messageBody.match(@TIME_REGEX);
-
-    if matches? && matches.length == 7
-
-      #NOTE: Switch to this implementation if N starts using proper timezone
-      #date = new Date(matches[0]);
-      #return date.getHours() + ":" + date.getMinutes();
-      return ("0" + matches[4]).slice(-2) + ":" + ("0" + matches[5]).slice(-2);
+      date = new Date(@message['created']);
+      return date.toLocaleTimeString();
 
   getText: ->
-    matches = @messageBody.match(@MESSAGE_EXCERPT_REGEX);
-    if (matches? && matches.length > 0)
-      value = matches[0].replace(@HTML_REGEX, "")
-      return @decodeHtml(value)
+    value = @message['content']['main'].replace(@HTML_REGEX, "")
+    return @decodeHtml(value)
 
   getHtmlExcerpt: ->
-    matches = @messageBody.match(@MESSAGE_EXCERPT_REGEX);
-    return null unless matches?
-
-    for match in matches
-      return match if match.length > 15
-
-    return null
+    @message['content']['main']
 
   getHtml: ->
-    matches = @MESSAGE_REGEX.exec @messageBody
-    return matches[1] if matches?
+    if @message['content']['extended']?
+      html = @message['content']['extended']
+    else
+      html = @message['content']['main']
+
+    figure = @getFigure()
+    if figure?
+      html += "<p><img src='" + figure + "' /></p>"
+
+    return html
 
   getId: =>
-    matches = @messageBody.match(@ARTICLE_ID_REGEX);
-    return matches[1] if matches?
+    @message['id'].toString()
 
   getTargetUrl: =>
-    matches = @messageBody.match(@TARGET_URL_REGEX);
-    if (matches? && matches.length == 2)
-      return matches[0]
+    @message['url']
 
   getPriority: =>
-    matches = @messageBody.match(@PRIORITY_REGEX);
-    if (matches? && matches.length == 2)
-      classes = matches[1];
-
-      return @PRIORITY_IMPORTANT if classes.indexOf("important") != -1
-      return @PRIORITY_STICKY if classes.indexOf("sticky") != -1
+    return @PRIORITY_IMPORTANT if @message['important']? and @message['important'] == true
+    return @PRIORITY_STICKY if @message['sticky']? and @message['sticky'] == true
 
   getTopics: =>
     topics = {}
-    topic = @TOPIC_REGEX.exec @messageBody
+    return topics unless @message['tag']
 
-    while topic? && topic.length > 2
-      topics[topic[1]] = @decodeHtml topic[2]
-      topic = @TOPIC_REGEX.exec @messageBody
+    for tag in @message['tag']
+      topics[tag['slug']] = tag['name']
 
-    return topics
+    topics
+
+  getCategory: =>
+    return @message['cat'].pop()
 
   decodeHtml: (html) ->
     txt = document.createElement "textarea"
@@ -130,7 +110,7 @@ class Minuta
   constructor: (@thumbnail, @time, @message, @id, @targetUrl, @priority) ->
 
 class Notifier
-  NO_TOPIC: "0"
+  NO_TOPIC: ""
   LOGO: "/images/icon512.png"
   BUTTONS: [
     chrome.i18n.getMessage("readMoreButton")
@@ -140,13 +120,13 @@ class Notifier
     "sound": "no-sound"
     "interval": 5
     "messageCount": 10
-    "importantOnly": false
     "displayTime": 10
     "notificationClick": "open"
     "snooze": "off"
+    "lastSync": Date.now()
 
   DEFAULT_LOCAL_SETTINGS:
-    "selectedTopic": "0"
+    "selectedTopic": ""
     "topics": {}
 
   DEFAULT_NOTIFICATION_OPTIONS:
@@ -178,7 +158,7 @@ class Notifier
 
   downloadMessages: (downloader, parser, silently) =>
     if not silently
-      silently = @currentSettings['snooze'] != 'off' and @currentSettings['snooze'] > (new Date()).getTime()
+      silently = @currentSettings['snooze'] != 'off' and @currentSettings['snooze'] > Date.now()
 
     minutesInterval =
       if @currentSettings['interval']? and parseInt(@currentSettings['interval']) >= 1
@@ -193,7 +173,9 @@ class Notifier
       messages = {}
       topics = {}
 
-      for rawMessage in rawMessages
+      for rawMessage in rawMessages.timeline
+        break if Object.keys(messages).length == parseInt(@currentSettings['messageCount'])
+
         message = parser.parse rawMessage
         for own key, value of message.topics
           topics[key] = value
@@ -207,22 +189,22 @@ class Notifier
         if Object.keys(messages).length < parseInt(@currentSettings['messageCount'])
           messages[message.id] = message
 
-      if @selectedTopic == @NO_TOPIC
-        @updateTopics topics
-
+      @currentSettings['lastSync'] = new Date()
       chrome.storage.local.set {"latestMessageIds": Object.keys(messages)}
       chrome.storage.local.get Object.keys(messages), (alreadyNotifiedMessages) =>
         delay = 0
         for id, message of messages
           continue if message.id of alreadyNotifiedMessages
 
-          if (silently) or (@currentSettings['importantOnly'] and message.priority != parser.PRIORITY_IMPORTANT)
+          if silently
             storage[message.id] = {
               "skipped": true
               "targetUrl": message.targetUrl
               "excerpt": message.excerpt
+              "html": message.html
               "timePretty": message.timePretty
-              "topics": message.topics
+              "thumbnail": message.thumbnail
+              "category": message.category
             } if message.excerpt.length > 10
           else
             do (message) =>
@@ -247,7 +229,7 @@ class Notifier
       chrome.storage.sync.clear()
       chrome.storage.sync.set val
 
-      if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSound.src.indexOf(val['sound']) == -1)
+      if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSounddsrc.indexOf(val['sound']) == -1)
         @notificationSound = new Audio('sounds/' + val['sound'] + '.mp3')
         
       chrome.storage.local.get @DEFAULT_LOCAL_SETTINGS, (wal) =>
@@ -276,8 +258,11 @@ class Notifier
     meta =
       "targetUrl": message.targetUrl
       "excerpt": message.excerpt
+      "html": message.html
       "skipped": false
       "timePretty": message.timePretty
+      "thumbnail": message.thumbnail
+      "category": message.category
       "topics": message.topics
 
     unless (message.id? and message.text?)

@@ -4,67 +4,62 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width">
 	<meta name="theme-color" content="#b00c28">
-	<link href="https://dennikn.sk/wp-content/themes/dnwp/bundle.5.css" rel="stylesheet">
-	<link href="styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="materialize.min.css">
+    <script type="text/javascript" src="jquery-2.1.1.min.js"></script>
+    <script src="materialize.min.js"></script>
+    <link href="styles.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 	<title>Minúta po minúte</title>
 </head>
 
 <body class="options">
 
-<div class="s s-container">
-	<header class="s s_header j-header">
-		<div class="head">
-			<h1 class="logo">
-                <a href="https://dennikn.sk/" title="Denník N">
-                    <i class="icon i i_logopos"></i>
-                    <span>Minúta po minúte</span>
-                </a>
-            </h1>
-			<div class="login visible">
-				<a href="#"><span>Nastavenia rozšírenia</span></i></a>
-                <img id="minuta-logo" src="images/icon48.png" alt="Minúta po minúte"/>
-			</div>			
-		</div>
-	</header>
-
-	<div class="a_minute">
-		<label for="interval">Interval (v minútach)</label>
-		<input type="number" placeholder="1" min="1" id="interval" name="interval" />
-	</div>
-
-    <div class="a_minute">
-        <label for="interval">Dĺžka zobrazenia správy (v sekundách)</label>
-        <input type="number" placeholder="10" min="1" max="25" id="display-time" name="display-time" />
+<div class="container">
+    <br/>
+    <div class="row">
+        <div class="input-field col s10">
+            <label for="interval">Interval (v minútach)</label>
+            <input type="number" placeholder="1" min="1" id="interval" name="interval" />
+        </div>
     </div>
 
-    <div class="a_minute">
+    <div class="row">
+        <div class="input-field col s10">
+            <label for="interval">Dĺžka zobrazenia správy (v sekundách)</label>
+            <input type="number" placeholder="10" min="1" max="25" id="display-time" name="display-time" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="input-field col s10">
         <label for="message-count">Sťahovať vždy len posledných N správ (staršie sa nezobrazia)</label>
         <input type="number" placeholder="1" min="1" max="20" id="message-count" name="message-count" />
+        </div>
     </div>
 
-    <div class="a_minute checkbox">
-        <input type="checkbox" id="important-only" name="important-only" />
-        <label for="important-only">Len dôležité správy</label>
+    <div class="row">
+        <div class="input-field col s10">
+            <select id="sound" name="sound">
+                <option value="no-sound">Bez zvuku</option>
+                <option value="knock_brush">Knock brush</option>
+            </select>
+            <label for="sound">Zvuk notifikácie</label>
+        </div>
     </div>
 
-	<div class="a_minute">
-		<label for="sound">Zvuk notifikácie</label>
-		<select id="sound" name="sound">
-			<option value="no-sound">Bez zvuku</option>
-			<option value="knock_brush">Knock brush</option>
-		</select>
-	</div>
-
-    <div class="a_minute">
-        <label for="notification-click">Správanie po kliknutí na notifikáciu</label>
-        <select id="notification-click" name="notification-click">
-            <option value="open">Otvoriť správu a zatvoriť notifikáciu</option>
-            <option value="close">Len zatvoriť notifikáciu</option>
-        </select>
-        <em>Správu bude stále možno otvoriť kliknutím na "Zobraziť správu..." v spodnej časti notifikácie</em>
+    <div class="row">
+        <div class="input-field col s10">
+            <select id="notification-click" name="notification-click">
+                <option value="open">Otvoriť správu a zatvoriť notifikáciu</option>
+                <option value="close">Len zatvoriť notifikáciu</option>
+            </select>
+            <label for="notification-click">Správanie po kliknutí na notifikáciu</label>
+        </div>
     </div>
 
-	<button id="save" class="e_button red i">Uložiť </button>
+    <div class="row">
+        <a id="save" class="btn">Uložiť </a>
+    </div>
 </div>
 
 <script src="options.js"></script>
