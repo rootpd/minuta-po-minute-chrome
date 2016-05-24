@@ -4,7 +4,6 @@ function initSnoozeTimer() {
 
     chrome.storage.sync.get("snooze", function(val) {
         if (typeof val['snooze'] == 'undefined' || val['snooze'] == 'off' || val['snooze'] <= (new Date()).getTime()) {
-            timer.style.display = 'none';
             return;
         }
 
@@ -49,26 +48,31 @@ function initSnoozeTimer() {
     });
 }
 
-function setSnoozeTimer() {
-    var value = document.getElementById("snooze").value;
+function setSettings() {
+    var snoozeVal = parseInt($("#snooze").val());
+    var categoriesVal = $('#categories').val();
 
     var snoozeDate = new Date();
-    snoozeDate.setMinutes(snoozeDate.getMinutes() + parseInt(value));
+    snoozeDate.setMinutes(snoozeDate.getMinutes() + snoozeVal);
 
-    var snooze = {};
-    snooze['snooze'] = snoozeDate.getTime();
-    chrome.storage.sync.set(snooze, function(val) {
+    var options = {};
+    options['snooze'] = snoozeDate.getTime();
+    options['selectedCategories'] = categoriesVal;
+
+    chrome.storage.sync.set(options, function(val) {
         initSnoozeTimer();
+        initCategoryFilter();
     });
+
+    var submit = $('#set-settings');
+    var oldText = submit.text();
+    submit.text('OK...');
+    setTimeout(function() {
+        submit.text(oldText);
+    }, 1200);
 }
 
-function removeSnoozeTimer() {
-    chrome.storage.sync.remove("snooze", function(val) {
-        initSnoozeTimer();
-    });
-}
-
-function initLatestMessages() {
+function initLatestMessages(categories) {
     chrome.storage.local.get("latestMessageIds", function(val) {
         var query = {};
         for (var i in val['latestMessageIds']) {
@@ -87,8 +91,27 @@ function initLatestMessages() {
                     continue;
                 }
 
+                var categoryTitles = [];
+                var categoryMatch = false;
+
+                for (j=0; j<wal[id]['categories'].length; j++) {
+                    if (wal[id]['categories'][j]['slug'] == 'hlavna') {
+                        continue
+                    }
+                    if (categories.indexOf(wal[id]['categories'][j]['slug']) !== -1) {
+                        categoryMatch = true;
+                    }
+                    categoryTitles.push(wal[id]['categories'][j]['name']);
+                }
+
+                console.log(categories)
+                if (!categoryMatch && categories.length > 0) {
+                    continue;
+                }
+
                 var thumbnail = '';
-                var title = '<span class="card-title"><img class="logo" src="images/mpm.svg" />' + wal[id]['category']['name'] + ' | ' + wal[id]['timePretty'] + '</span>';
+                var title = '<a href="' + wal[id]['targetUrl'] + '"><span class="badge grey-text text-lighten-1">' + wal[id]['timePretty'] + '</span></a>' +
+                    '<span class="card-title"><img class="logo" src="images/mpm.svg" />' + categoryTitles.join(" | ") + '</span>';
                 if (typeof wal[id]['thumbnail'] != 'undefined' && wal[id]['thumbnail'] != null) {
                     thumbnail = '' +
                         '<div class="card-image">' +
@@ -136,13 +159,50 @@ function initLastSyncTime() {
     });
 }
 
-$(document).ready(function() {
-    $('select').material_select();
+function initCategoryFilter(callback) {
+    var list = {
+        "svet": "Svet",
+        "slovensko": "Slovensko",
+        "ekonomika": "Ekonomika",
+        "kultura": "Kultúra",
+        "sport": "Šport"
+    };
 
+    var categoriesSelect = $('#categories');
+    var categoriesFilterValue = $('#categories-filter-value');
+
+    chrome.storage.sync.get("selectedCategories", function(val) {
+        names = [];
+
+        if (val['selectedCategories'] == null) {
+            val['selectedCategories'] = [];
+        }
+
+        for (i=0; i<val['selectedCategories'].length; i++) {
+            names.push(list[val['selectedCategories'][i]]);
+        }
+        categoriesSelect.val(val['selectedCategories']);
+        if (names.length > 0) {
+            categoriesFilterValue.text(names.join(", "));
+        }
+
+        $('select').material_select();
+
+        if (typeof(callback) == 'undefined') {
+            return;
+        }
+
+        callback(val['selectedCategories']);
+    });
+}
+
+$(document).ready(function() {
     initSnoozeTimer();
-    initLatestMessages();
     initLastSyncTime();
 
-    $("#set-snooze").bind("click", setSnoozeTimer);
-    $("#unbind-snooze").bind("click", removeSnoozeTimer);
+    initCategoryFilter(initLatestMessages);
+
+    $('select').material_select();
+
+    $("#set-settings").bind("click", setSettings);
 });

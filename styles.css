@@ -27,11 +27,40 @@ body.popup {
     vertical-align: bottom;
 }
 
+.card .card-title {
+    font-size: 20px;
+}
+
 .card-title .logo {
-    width: 26px;
+    width: 20px;
     margin-right: 5px;
     vertical-align: text-bottom;
 }
 .card-image .logo {
     display: none !important;
+}
+.card-image span.badge {
+    color: white;
+}
+.card .card-content {
+    padding: 10px 20px 20px;
+}
+span.badge {
+    top: 10px;
+    padding: 0;
+}
+.dropdown-content li>span {
+    font-size: 14px;
+    line-height: 13px;
+    padding: 13px 19px;
+}
+.card-content a {
+    color: #b71c1c;
+}
+.dropdown-content li>span {
+    color: #b71c1c;
+}
+[type="checkbox"]:checked+label:before {
+    border-right-color: #B71C1C;
+    border-bottom-color: #B71C1C;
 }

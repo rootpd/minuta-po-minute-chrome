@@ -37,7 +37,7 @@ class MinutaAjaxMessageParser
       targetUrl: @getTargetUrl()
       priority: @getPriority()
       topics: @getTopics()
-      category: @getCategory()
+      categories: @getCategories()
     }
 
   getFigure: =>
@@ -50,7 +50,7 @@ class MinutaAjaxMessageParser
 
   getTimePretty: =>
       date = new Date(@message['created']);
-      return date.toLocaleTimeString();
+      return date.timeNow()
 
   getText: ->
     value = @message['content']['main'].replace(@HTML_REGEX, "")
@@ -90,8 +90,8 @@ class MinutaAjaxMessageParser
 
     topics
 
-  getCategory: =>
-    return @message['cat'].pop()
+  getCategories: =>
+    return @message['cat']
 
   decodeHtml: (html) ->
     txt = document.createElement "textarea"
@@ -124,9 +124,9 @@ class Notifier
     "notificationClick": "open"
     "snooze": "off"
     "lastSync": Date.now()
+    "selectedCategories": []
 
   DEFAULT_LOCAL_SETTINGS:
-    "selectedTopic": ""
     "topics": {}
 
   DEFAULT_NOTIFICATION_OPTIONS:
@@ -140,7 +140,6 @@ class Notifier
   downloader: null
   parser: null
   topics: {}
-  selectedTopic: "0"
 
   constructor: (@downloader, @parser) ->
     chrome.storage.local.clear()
@@ -165,9 +164,8 @@ class Notifier
       then parseInt(@currentSettings['interval']) else 1
 
     chrome.storage.local.remove("stickyTopicMessage");
-    @resetTopics() if @selectedTopic == @NO_TOPIC
 
-    downloader.xhrDownload "text", downloader.URI + @selectedTopic, (event) =>
+    downloader.xhrDownload "text", downloader.URI, (event) =>
       rawMessages = downloader.getMessages event.target.response;
       storage = {}
       messages = {}
@@ -180,12 +178,6 @@ class Notifier
         for own key, value of message.topics
           topics[key] = value
 
-        if message.priority is parser.PRIORITY_STICKY
-          if @selectedTopic != @NO_TOPIC
-            @updateStickyTopicMessage message
-
-          continue
-
         if Object.keys(messages).length < parseInt(@currentSettings['messageCount'])
           messages[message.id] = message
 
@@ -196,7 +188,8 @@ class Notifier
         for id, message of messages
           continue if message.id of alreadyNotifiedMessages
 
-          if silently
+          categories = (category['slug'] for category in message.categories)
+          if silently || (@currentSettings['selectedCategories'].length > 0 && !intersection(categories, @currentSettings['selectedCategories']))
             storage[message.id] = {
               "skipped": true
               "targetUrl": message.targetUrl
@@ -204,7 +197,7 @@ class Notifier
               "html": message.html
               "timePretty": message.timePretty
               "thumbnail": message.thumbnail
-              "category": message.category
+              "categories": message.categories
             } if message.excerpt.length > 10
           else
             do (message) =>
@@ -229,29 +222,13 @@ class Notifier
       chrome.storage.sync.clear()
       chrome.storage.sync.set val
 
-      if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSounddsrc.indexOf(val['sound']) == -1)
+      if val['sound'] != 'no-sound' and (not @notificationSound? or @notificationSound.src.indexOf(val['sound']) == -1)
         @notificationSound = new Audio('sounds/' + val['sound'] + '.mp3')
         
       chrome.storage.local.get @DEFAULT_LOCAL_SETTINGS, (wal) =>
-        @selectedTopic = wal['selectedTopic']
         @topics = wal['topics']
         callback() if callback?
 
-  resetTopics: =>
-    chrome.storage.local.remove "topics"
-    @topics = {}
-
-  updateTopics: (topics) =>
-    if Object.keys(@topics).toString() != Object.keys(topics).toString()
-      chrome.storage.local.set {
-        "topics": topics
-      }, =>
-        @topics = topics
-
-  updateStickyTopicMessage: (message) ->
-    chrome.storage.local.set {
-      "stickyTopicMessage": message.html
-    }
 
   notifyArticle: (message) =>
     options = JSON.parse(JSON.stringify(@DEFAULT_NOTIFICATION_OPTIONS));
@@ -262,7 +239,7 @@ class Notifier
       "skipped": false
       "timePretty": message.timePretty
       "thumbnail": message.thumbnail
-      "category": message.category
+      "categories": message.categories
       "topics": message.topics
 
     unless (message.id? and message.text?)
@@ -270,10 +247,8 @@ class Notifier
       return false;
 
     options.message = message.text
-    if Object.keys(message.topics).length == 1
-      options.title = message.topics[Object.keys(message.topics)[0]]
-    else if @selectedTopic != @NO_TOPIC && @topics[@selectedTopic]?
-      options.title = @topics[@selectedTopic]
+    if message.categories[message.categories.length-1]['slug'] != 'hlavna'
+      options.title = message.categories[message.categories.length - 1]['name']
 
     if message.timePretty?
       options.title = "[" + message.timePretty + "] " + options.title
@@ -332,10 +307,19 @@ class Notifier
       console.log targetUrl
       chrome.tabs.create {url: targetUrl}
 
+intersection = (a, b) ->
+  [a, b] = [b, a] if a.length > b.length
+  res = (value for value in a when value in b)
+  return res.length > 0
 
 ########################
 # MAIN
 ########################
+
+Date.prototype.timeNow = ->
+  return (if @getHours() < 10 then "0" else "") + @getHours() + ":" +
+      (if @getMinutes() < 10 then "0" else "") + @getMinutes() + ":" +
+      (if @getSeconds() < 10 then "0" else "") + @getSeconds()
 
 notifier = new Notifier(MinutaAjaxDownloader, MinutaAjaxMessageParser)
 notifier.run true

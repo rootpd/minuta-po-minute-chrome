@@ -16,17 +16,20 @@
 <body class="popup">
 
 <div class="card blue-grey darken-1">
-    <div class="card-content white-text">
+    <div class="card-content white-text red lighten-2">
         <span class="card-title">Udalosti rozšírenia</span>
 
         <div id="sync-time">
             <i class="material-icons prefix">loop</i> Posledná synchronizácia:
             <span id="sync-time-value" style="margin-left: 5px;"></span>
         </div>
+        <div id="categories-filter">
+            <i class="material-icons prefix">dashboard</i> Filter tém:
+            <span id="categories-filter-value" style="margin-left: 5px;">vypnutý</span>
+        </div>
         <div id="snooze-timer">
             <i class="material-icons prefix">snooze</i> Pozastavenie notifikácií:
-            <span id="snooze-timer-value" style="margin-left: 5px;"></span> |
-            <i class="material-icons prefix" id="unbind-snooze" style="cursor: pointer">not_interested</i>
+            <span id="snooze-timer-value" style="margin-left: 5px;">neaktívne</span>
         </div>
     </div>
 </div>
@@ -34,13 +37,14 @@
 <div id="latest-messages" class="row"></div>
 
 <div class="card blue-grey darken-1">
-    <div class="card-content white-text">
+    <div class="card-content red lighten-2 white-text">
         <span class="card-title">Nastavenia</span>
 
         <div id="snooze-setting">
             <div class="input-field">
-                <select id="snooze" name="snooze">
+                <select id="snooze" name="snooze" class="red lighten-2">
                     <option value="" disabled selected>Pozastaviť notifikácie</option>
+                    <option value="0">Povoliť notifikácie</option>
                     <option value="30">30 minút</option>
                     <option value="60">1 hodina</option>
                     <option value="120">2 hodiny</option>
@@ -49,13 +53,27 @@
                     <option value="480">8 hodín</option>
                 </select>
             </div>
-            <button id="set-snooze" class="btn">Uložiť</button>
         </div>
+
+        <div id="category-filter-setting">
+            <div class="input-field">
+                <select multiple id="categories" name="categories">
+                    <option value="" disabled>Filter kategórií</option>
+                    <option value="svet">Svet</option>
+                    <option value="slovensko">Slovensko</option>
+                    <option value="ekonomika">Ekonomika</option>
+                    <option value="kultura">Kultúra</option>
+                    <option value="sport">Šport</option>
+                </select>
+            </div>
+        </div>
+
+        <button id="set-settings" class="btn white-text red darken-4">Uložiť</button>
     </div>
 </div>
 
-<footer class="page-footer">
-    <div class="footer-copyright">
+<footer class="page-footer red lighten-5">
+    <div class="footer-copyright red darken-4">
         <div class="container">
             <a target="_blank" class="grey-text text-lighten-4 left" href="https://bayloft.co">extension by bayloft</a>
             <a target="_blank" class="grey-text text-lighten-4 right" href="https://dennikn.sk">Copyright © N Press, s. r. o.</a>

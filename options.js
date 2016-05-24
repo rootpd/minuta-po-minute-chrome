@@ -4,13 +4,15 @@ function saveOptions() {
     var messageCount = getElementValue("message-count");
     var displayTime = getElementValue("display-time");
     var notificationClick = getElementValue("notification-click");
+    var selectedCategories = $("#categories").val();
 
     chrome.storage.sync.set({
         "sound": sound,
         "interval": interval,
         "messageCount": messageCount,
         "displayTime": displayTime,
-        "notificationClick": notificationClick
+        "notificationClick": notificationClick,
+        "selectedCategories": selectedCategories
     }, function() {
         var submit = document.getElementById('save');
         var oldText = submit.innerHTML;
@@ -41,19 +43,22 @@ function restoreOptions() {
         "interval": 5,
         "messageCount": 3,
         "displayTime": 10,
-        "notificationClick": "open"
+        "notificationClick": "open",
+        "selectedCategories": []
     }, function(items) {
-        document.getElementById('interval').value = items['interval'];
-        document.getElementById('sound').value = items['sound'];
-        document.getElementById('message-count').value = items['messageCount'];
-        document.getElementById('display-time').value = items['displayTime'];
-        document.getElementById('notification-click').value = items['notificationClick'];
+        $('#interval').val(items['interval']);
+        $('#sound').val(items['sound']);
+        $('#message-count').val(items['messageCount']);
+        $('#display-time').val(items['displayTime']);
+        $('#notification-click').val(items['notificationClick']);
+        $('#categories').val(items['selectedCategories']);
+
+        $('select').material_select();
     });
 
 }
 
 $(document).ready(function() {
-    $('select').material_select();
     restoreOptions();
     $('#save').bind('click', saveOptions);
 });
