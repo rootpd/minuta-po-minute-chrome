@@ -218,6 +218,7 @@ class Notifier
 
   reloadSettings: (callback) =>
     chrome.storage.sync.get @DEFAULT_SYNC_SETTINGS, (val) =>
+      val['selectedCategories'] = [] if val['selectedCategories'] == null
       @currentSettings = val;
       chrome.storage.sync.clear()
       chrome.storage.sync.set val

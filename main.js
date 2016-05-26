@@ -347,6 +347,9 @@
     Notifier.prototype.reloadSettings = function(callback) {
       return chrome.storage.sync.get(this.DEFAULT_SYNC_SETTINGS, (function(_this) {
         return function(val) {
+          if (val['selectedCategories'] === null) {
+            val['selectedCategories'] = [];
+          }
           _this.currentSettings = val;
           chrome.storage.sync.clear();
           chrome.storage.sync.set(val);
