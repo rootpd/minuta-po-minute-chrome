@@ -1,5 +1,5 @@
 class MinutaAjaxDownloader
-  URI: "https://dennikn.sk/api/minuta"
+  URI: "https://dennikn.sk/api/minute"
   ARTICLE_REGEX: /(<article[\s\S]*?<\/article>)/ig
 
   xhrDownload: (responseType, URI, successCallback, errorCallback) ->

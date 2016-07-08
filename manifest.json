@@ -4,7 +4,7 @@
   "description": "Pravidelné notifikácie s najnovšími správami Minúty po minúte Denníka N.",
   "default_locale": "sk",
   "manifest_version" : 2,
-  "version" : "1.6.1",
+  "version" : "1.6.2",
   "options_page": "options.html",
   "options_ui": {
     "chrome_style": true,

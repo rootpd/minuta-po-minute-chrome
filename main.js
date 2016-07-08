@@ -10,7 +10,7 @@
       this.getMessages = bind(this.getMessages, this);
     }
 
-    MinutaAjaxDownloader.prototype.URI = "https://dennikn.sk/api/minuta";
+    MinutaAjaxDownloader.prototype.URI = "https://dennikn.sk/api/minute";
 
     MinutaAjaxDownloader.prototype.ARTICLE_REGEX = /(<article[\s\S]*?<\/article>)/ig;
 
