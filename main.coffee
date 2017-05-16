@@ -49,8 +49,10 @@ class MinutaAjaxMessageParser
         return "http://img.youtube.com/vi/" + matches[1] + "/mqdefault.jpg"
 
   getTimePretty: =>
+      # expecting 2017-05-16T06:14:53 format (no explicit timezone, in UTC)
       date = new Date(@message['created']);
-      return date.timeNow()
+      userTimezoneOffset = date.getTimezoneOffset() * -60000;
+      return (new Date(date.getTime() + userTimezoneOffset)).timeNow()
 
   getText: ->
     value = @message['content']['main'].replace(@HTML_REGEX, "")
